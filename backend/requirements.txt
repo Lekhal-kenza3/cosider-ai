@@ -1,0 +1,25 @@
+# --- Socle API ---
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+python-multipart>=0.0.9
+httpx>=0.27
+pytest>=8
+
+# --- Base de données (installé et testé) ---
+sqlalchemy>=2.0
+alembic>=1.13
+psycopg[binary]>=3.2
+
+# --- À activer aux étapes suivantes ---
+# python-jose[cryptography]
+# passlib[bcrypt]
+# pymupdf
+# python-docx
+# sentence-transformers
+# chromadb
+# langchain-text-splitters
+# ollama
+# pandas
+# matplotlib
