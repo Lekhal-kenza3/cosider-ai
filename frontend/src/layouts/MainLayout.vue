@@ -1,77 +1,122 @@
 
 <script setup>
-import { ref } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { computed, ref } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const menuOuvert = ref(false)
+const recherche = ref('')
 
 const navigation = [
-  { nom: 'Tableau de bord', chemin: '/', icone: 'dashboard' },
-  { nom: 'Documents', chemin: '/documents', icone: 'documents' },
+  { nom: 'Tableau de bord', chemin: '/', icone: 'home' },
+  { nom: 'Documents', chemin: '/documents', icone: 'file' },
   { nom: 'Assistant IA', chemin: '/chat', icone: 'chat' },
-  { nom: 'Analyse documentaire', chemin: '/analysis', icone: 'analysis' },
+  { nom: 'Analyse documentaire', chemin: '/analysis', icone: 'chart' },
   { nom: 'Historique', chemin: '/history', icone: 'history' },
+  { nom: 'Entrepôt de données', chemin: '/warehouse', icone: 'database' },
   { nom: 'Paramètres', chemin: '/settings', icone: 'settings' }
 ]
+
+const titrePage = computed(() => {
+  return navigation.find(item => item.chemin === route.path)?.nom
+    || 'COSIDER AI'
+})
 
 function fermerMenu() {
   menuOuvert.value = false
 }
+
+function lancerRecherche() {
+  const texte = recherche.value.trim()
+
+  if (!texte) return
+
+  router.push({
+    path: '/documents',
+    query: { search: texte }
+  })
+
+  fermerMenu()
+}
+
+function ouvrirNotifications() {
+  window.alert('Aucune nouvelle notification pour le moment.')
+}
+
+function ouvrirAide() {
+  window.alert(
+    'COSIDER AI : utilisez le menu pour accéder aux documents, aux analyses et à votre assistant.'
+  )
+}
 </script>
 
 <template>
-  <div class="app-shell">
+  <div class="cosider-app">
+
+    <!-- FOND MOBILE -->
     <div
       v-if="menuOuvert"
       class="mobile-overlay"
       @click="fermerMenu"
     ></div>
 
-    <aside class="sidebar" :class="{ 'sidebar-open': menuOuvert }">
-      <div class="brand">
-        <div class="brand-symbol">C<span>.</span></div>
+    <!-- SIDEBAR -->
+    <aside
+      class="sidebar"
+      :class="{ 'sidebar-open': menuOuvert }"
+    >
 
-        <div class="brand-text">
-          <strong>COSIDER <span>AI</span></strong>
-          <small>DOCUMENT INTELLIGENCE</small>
-        </div>
+      <!-- LOGO OFFICIEL -->
+      <div class="logo-section">
+        <RouterLink to="/" @click="fermerMenu">
+          <img
+            src="/images/logo-cosider.png"
+            alt="Logo COSIDER Construction"
+            class="cosider-logo"
+          />
+        </RouterLink>
+       
+
+<p class="logo-subtitle">
+  PLATEFORME INTELLIGENTE
+</p>
       </div>
 
-      <div class="workspace-label">ESPACE DE TRAVAIL</div>
+      
 
-      <nav class="navigation">
+      <!-- NAVIGATION -->
+      <nav class="navigation" aria-label="Navigation principale">
         <RouterLink
           v-for="item in navigation"
           :key="item.chemin"
           :to="item.chemin"
           class="nav-link"
-          active-class="nav-active"
-          exact-active-class="nav-active"
+          :class="{ active: route.path === item.chemin }"
           @click="fermerMenu"
         >
           <span class="nav-icon">
             <svg
-              v-if="item.icone === 'dashboard'"
+              v-if="item.icone === 'home'"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.8"
+              stroke-width="2"
             >
-              <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-              <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-              <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-              <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+              <path d="m3 10 9-7 9 7"/>
+              <path d="M5 9v12h14V9M9 21v-8h6v8"/>
             </svg>
 
             <svg
-              v-else-if="item.icone === 'documents'"
+              v-else-if="item.icone === 'file'"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.8"
+              stroke-width="2"
             >
-              <path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/>
-              <path d="M14 3v6h5M9 13h6M9 17h6"/>
+              <path d="M6 2h8l5 5v14H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/>
+              <path d="M14 2v6h5M8 13h8M8 17h8"/>
             </svg>
 
             <svg
@@ -79,21 +124,21 @@ function fermerMenu() {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.8"
+              stroke-width="2"
             >
-              <path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-4.5A8.5 8.5 0 1 1 20 11.5Z"/>
-              <path d="m12 7-1 3.5L7.5 12l3.5 1.5L12 17l1-3.5 3.5-1.5-3.5-1.5L12 7Z"/>
+              <path d="M20 11.5a8 8 0 0 1-8 8 9 9 0 0 1-4-.9L3 21l1.9-4.5A8 8 0 1 1 20 11.5Z"/>
+              <path d="M9 12h6M12 9v6"/>
             </svg>
 
             <svg
-              v-else-if="item.icone === 'analysis'"
+              v-else-if="item.icone === 'chart'"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.8"
+              stroke-width="2"
             >
-              <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
-              <path d="m15 7 2 2 4-4"/>
+              <path d="M3 21h18M6 18v-6M12 18V5M18 18v-9"/>
+              <path d="m15 6 3-3 3 3"/>
             </svg>
 
             <svg
@@ -101,10 +146,22 @@ function fermerMenu() {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.8"
+              stroke-width="2"
             >
-              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
-              <path d="M3 3v5h5M12 7v5l3 2"/>
+              <path d="M3 12a9 9 0 1 0 3-7"/>
+              <path d="M3 4v5h5M12 7v5l3 2"/>
+            </svg>
+
+            <svg
+              v-else-if="item.icone === 'database'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/>
+              <path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>
             </svg>
 
             <svg
@@ -112,190 +169,271 @@ function fermerMenu() {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.8"
+              stroke-width="2"
             >
               <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 2-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-3v-.9a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-2-2 .1-.1A1.7 1.7 0 0 0 7.2 15a1.7 1.7 0 0 0-1.5-1H5v-3h.7a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-2 .1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V4h3v.9a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 2 2-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.7v3h-.7a1.7 1.7 0 0 0-1.5 1Z"/>
+              <path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/>
             </svg>
           </span>
 
           <span>{{ item.nom }}</span>
-          <span class="nav-arrow">›</span>
         </RouterLink>
       </nav>
 
-      <div class="sidebar-bottom">
-        <div class="ai-status">
-          <span class="status-dot"></span>
-          <div>
-            <strong>Espace IA</strong>
-            <small>Plateforme documentaire</small>
-          </div>
-        </div>
-
-        <div class="sidebar-footer">
-          COSIDER AI <span>•</span> Version 1.0
-        </div>
+      <!-- DÉCORATION BAS DE SIDEBAR -->
+      <div class="sidebar-decoration">
+        <svg viewBox="0 0 260 200" preserveAspectRatio="none">
+          <g fill="#e9eaec">
+            <path d="M18 140 58 113v87H18Z"/>
+            <path d="M68 115 112 78v122H68Z"/>
+            <path d="M121 94 162 49v151h-41Z"/>
+            <path d="M172 74 210 22v178h-38Z"/>
+          </g>
+          <g stroke="#fff" stroke-width="3" opacity=".7">
+            <path d="M36 150v40M51 137v53M85 128v62M101 114v76M140 110v80M155 93v97M190 90v100"/>
+          </g>
+          <path
+            d="M0 184 Q90 188 160 145 T260 130 V200 H0Z"
+            fill="#d90020"
+          />
+        </svg>
       </div>
+
     </aside>
 
+    <!-- ZONE PRINCIPALE -->
     <div class="main-area">
+
+      <!-- BARRE SUPÉRIEURE -->
       <header class="topbar">
-        <div class="topbar-left">
+
+        <div class="topbar-brand">
           <button
-            class="mobile-menu-btn"
+            class="menu-button"
+            type="button"
             aria-label="Ouvrir le menu"
-            @click="menuOuvert = true"
+            @click="menuOuvert = !menuOuvert"
           >
             ☰
           </button>
 
-          <div class="breadcrumb">
-            <span class="breadcrumb-home">Workspace</span>
-            <span class="breadcrumb-separator">/</span>
-            <strong>COSIDER AI</strong>
-          </div>
+          <strong>COSIDER AI</strong>
         </div>
 
-        <div class="topbar-right">
-          <span class="topbar-tag">
-            <span class="tag-dot"></span>
-            Document Intelligence
-          </span>
+        <!-- RECHERCHE -->
+        <form class="search-box" @submit.prevent="lancerRecherche">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m16 16 5 5"/>
+          </svg>
+
+          <input
+            v-model="recherche"
+            type="search"
+            placeholder="Rechercher un document, une analyse..."
+            aria-label="Rechercher"
+          />
+
+          <button type="submit" class="search-submit">
+            ↵
+          </button>
+        </form>
+
+        <!-- PROFIL ET NOTIFICATIONS -->
+        <div class="topbar-actions">
+          <button
+            type="button"
+            class="icon-button notification-button"
+            aria-label="Notifications"
+            @click="ouvrirNotifications"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+              <path d="M10 21h4"/>
+            </svg>
+            <span class="notification-dot"></span>
+          </button>
+
+          <button
+            type="button"
+            class="icon-button help-button"
+            aria-label="Aide"
+            @click="ouvrirAide"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/>
+            </svg>
+          </button>
 
           <div class="topbar-divider"></div>
 
-          <div class="profile">
-            <div class="profile-avatar">C</div>
-            <div class="profile-info">
+          <RouterLink to="/settings" class="user-profile">
+            <div class="avatar">C</div>
+
+            <div class="user-details">
               <strong>Mon espace</strong>
-              <small>Utilisateur</small>
+              <small>Administrateur</small>
             </div>
-          </div>
+
+            <span class="profile-chevron">⌄</span>
+          </RouterLink>
         </div>
+
       </header>
 
+      <!-- CONTENU DES PAGES -->
       <main class="page-content">
         <RouterView />
       </main>
+
     </div>
+
   </div>
 </template>
 
 <style scoped>
-.app-shell {
+.cosider-app {
   display: flex;
   min-height: 100vh;
-  color: #202634;
+  background: #f7f8fa;
+  color: #17191e;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
 }
 
+/* SIDEBAR */
 .sidebar {
-  width: 270px;
-  min-width: 270px;
-  min-height: 100vh;
-  background: #ffffff;
-  border-right: 1px solid #ebedf2;
-  display: flex;
-  flex-direction: column;
   position: sticky;
   top: 0;
+  width: 268px;
+  min-width: 268px;
   height: 100vh;
-  z-index: 30;
-}
-
-.brand {
+  background: #fff;
+  border-right: 1px solid #e9e9ed;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 32px 23px 37px;
+  flex-direction: column;
+  z-index: 50;
+  overflow: hidden;
 }
 
-.brand-symbol {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(145deg, #d71e37, #990e20);
-  border-radius: 15px;
+/* LOGO */
+.logo-section {
+  height: 95px;
+  min-height: 95px;
+  padding: 10px 20px 6px;
+  border-bottom: 1px solid #f0f0f2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-section a {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-family: 'Manrope', sans-serif;
-  font-size: 28px;
-  font-weight: 800;
-  box-shadow: 0 8px 18px rgba(181, 18, 38, 0.18);
+  width: 100%;
 }
 
-.brand-symbol span {
-  color: #ffb5c0;
+.cosider-logo {
+  max-width: 175px;
+  width: 100%;
+  max-height: 57px;
+  object-fit: contain;
 }
 
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.brand-text strong {
-  font-family: 'Manrope', sans-serif;
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -0.8px;
-}
-
-.brand-text strong span {
-  color: #b51226;
-}
-
-.brand-text small {
-  color: #9299a6;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-}
-
-.workspace-label {
-  padding: 0 28px;
-  color: #9ba2ae;
+.construction-label {
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 1.5px;
-  margin-bottom: 17px;
+  letter-spacing: 2px;
+  color: #242424;
+  margin-top: 2px;
 }
 
+/* IDENTITÉ */
+.app-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 19px 30px;
+}
+
+.ai-logo {
+  width: 51px;
+  height: 51px;
+  min-width: 51px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #ec0025, #aa001b);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 5px 12px #b5122633;
+}
+
+.app-description {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.app-description strong {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.app-description span {
+  font-size: 11px;
+  line-height: 1.55;
+  color: #70747d;
+}
+
+/* NAVIGATION */
 .navigation {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 0 13px;
+  gap: 4px;
+  padding: 0 16px;
+  position: relative;
+  z-index: 2;
 }
 
 .nav-link {
-  min-height: 49px;
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 0 14px;
-  border-radius: 12px;
-  color: #737b8b;
+  gap: 16px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 10px;
+  color: #22252c;
+  text-decoration: none;
   font-size: 13px;
   font-weight: 700;
-  transition: all 0.2s ease;
+  transition: background .2s, color .2s;
 }
 
 .nav-link:hover {
-  background: #fff5f6;
-  color: #b51226;
+  background: #fff1f3;
+  color: #bd0020;
 }
 
-.nav-active,
-.nav-active:hover {
-  color: #b51226;
-  background: #fff0f2;
+.nav-link.active {
+  color: white;
+  background: linear-gradient(90deg, #c9001c, #e00020);
+  box-shadow: 0 4px 9px #c9001c2a;
 }
 
 .nav-icon {
-  width: 21px;
-  height: 21px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 }
 
@@ -306,209 +444,222 @@ function fermerMenu() {
   stroke-linejoin: round;
 }
 
-.nav-arrow {
-  margin-left: auto;
-  font-size: 20px;
-  opacity: 0;
-}
-
-.nav-active .nav-arrow,
-.nav-link:hover .nav-arrow {
-  opacity: 1;
-}
-
-.sidebar-bottom {
+/* DÉCORATION */
+.sidebar-decoration {
   margin-top: auto;
-  padding: 20px 16px 23px;
+  width: 100%;
+  height: 190px;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.ai-status {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: #f8f9fb;
-  border: 1px solid #eff0f4;
-  border-radius: 14px;
+.sidebar-decoration svg {
+  width: 100%;
+  height: 100%;
 }
 
-.status-dot,
-.tag-dot {
-  width: 9px;
-  height: 9px;
-  background: #20b779;
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(32, 183, 121, 0.12);
-  flex-shrink: 0;
-}
-
-.ai-status div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ai-status strong {
-  font-size: 12px;
-}
-
-.ai-status small {
-  font-size: 10px;
-  color: #8992a0;
-}
-
-.sidebar-footer {
-  margin-top: 21px;
-  text-align: center;
-  font-size: 10px;
-  color: #a0a6b1;
-}
-
-.sidebar-footer span {
-  color: #b51226;
-  margin: 0 5px;
-}
-
+/* TOPBAR */
 .main-area {
   flex: 1;
   min-width: 0;
 }
 
 .topbar {
-  height: 82px;
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid #ebedf2;
+  height: 70px;
+  background: #fff;
+  border-bottom: 1px solid #e9e9ed;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 37px;
+  gap: 24px;
+  padding: 0 30px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
-.topbar-left,
-.topbar-right,
-.profile,
-.breadcrumb {
+.topbar-brand {
   display: flex;
   align-items: center;
+  gap: 21px;
+  white-space: nowrap;
 }
 
-.breadcrumb {
-  gap: 12px;
-  font-size: 12px;
-}
-
-.breadcrumb-home {
-  color: #969eac;
-}
-
-.breadcrumb-separator {
-  color: #c6cbd4;
-}
-
-.breadcrumb strong {
+.topbar-brand strong {
+  font-size: 19px;
   font-weight: 800;
+  letter-spacing: -.6px;
 }
 
-.topbar-right {
-  gap: 23px;
+.menu-button {
+  background: transparent;
+  border: 0;
+  font-size: 25px;
+  cursor: pointer;
+  color: #161616;
+  padding: 5px;
 }
 
-.topbar-tag {
+.search-box {
+  flex: 1;
+  max-width: 530px;
+  height: 39px;
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #626c7d;
-  background: #f6f8fa;
-  padding: 10px 14px;
-  border-radius: 9px;
+  border: 1px solid #e0e2e8;
+  background: #fafbfc;
+  border-radius: 22px;
+  padding: 0 12px;
 }
 
-.tag-dot {
-  width: 7px;
-  height: 7px;
-  box-shadow: none;
+.search-box:focus-within {
+  border-color: #c9001c;
+}
+
+.search-box svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: #222;
+}
+
+.search-submit {
+  border: 0;
+  background: #f0f1f5;
+  border-radius: 5px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px 8px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+}
+
+.icon-button {
+  position: relative;
+  border: 0;
+  background: transparent;
+  width: 27px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.icon-button svg {
+  width: 23px;
+  height: 23px;
+}
+
+.notification-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #d60020;
+  border-radius: 50%;
+  right: 0;
+  top: 1px;
 }
 
 .topbar-divider {
   width: 1px;
-  height: 28px;
-  background: #e8eaf0;
+  height: 30px;
+  background: #e5e7eb;
 }
 
-.profile {
-  gap: 11px;
-}
-
-.profile-avatar {
-  width: 39px;
-  height: 39px;
-  border-radius: 12px;
-  background: #fff0f2;
-  color: #b51226;
+.user-profile {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 800;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  white-space: nowrap;
 }
 
-.profile-info {
+.avatar {
+  width: 39px;
+  height: 39px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #46404a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.user-details {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.profile-info strong {
+.user-details strong {
   font-size: 12px;
+  font-weight: 800;
 }
 
-.profile-info small {
+.user-details small {
+  color: #7d818b;
   font-size: 10px;
-  color: #9299a6;
 }
 
+.profile-chevron {
+  font-size: 20px;
+  margin-left: 10px;
+}
+
+/* CONTENU */
 .page-content {
-  padding: 34px 38px 60px;
-  max-width: 1700px;
+  padding: 24px;
+  max-width: 1750px;
   margin: 0 auto;
 }
 
-.mobile-menu-btn {
-  display: none;
-  border: none;
-  background: transparent;
-  font-size: 24px;
-  color: #b51226;
-}
-
+/* RESPONSIVE */
 .mobile-overlay {
   display: none;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .sidebar {
-    width: 235px;
-    min-width: 235px;
+    width: 240px;
+    min-width: 240px;
   }
 
-  .page-content {
-    padding: 28px 24px;
+  .topbar {
+    gap: 14px;
+    padding: 0 20px;
+  }
+
+  .topbar-actions {
+    gap: 12px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .sidebar {
     position: fixed;
     left: 0;
-    top: 0;
-    width: 270px;
-    height: 100vh;
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
+    transition: transform .25s ease;
+    width: 268px;
   }
 
-  .sidebar-open {
+  .sidebar.sidebar-open {
     transform: translateX(0);
   }
 
@@ -516,27 +667,65 @@ function fermerMenu() {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    z-index: 20;
+    background: #0007;
+    z-index: 40;
   }
 
-  .mobile-menu-btn {
-    display: block;
+  .search-box {
+    max-width: 330px;
   }
+}
 
+@media (max-width: 650px) {
   .topbar {
-    height: 70px;
-    padding: 0 20px;
+    height: 65px;
+    padding: 0 13px;
   }
 
-  .topbar-tag,
+  .topbar-brand {
+    gap: 9px;
+  }
+
+  .topbar-brand strong {
+    font-size: 15px;
+  }
+
+  .search-box {
+    display: none;
+  }
+
+  .help-button,
   .topbar-divider,
-  .profile-info {
+  .user-details,
+  .profile-chevron {
     display: none;
   }
 
   .page-content {
-    padding: 24px 16px;
+    padding: 16px;
   }
+
+  .sidebar-decoration {
+    height: 150px;
+  }
+}
+.logo-section {
+  height: 145px;
+  min-height: 145px;
+  padding: 18px 15px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-subtitle {
+  margin: 10px 0 0;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  color: #b51226;
+  text-align: center;
+  white-space: nowrap;
 }
 </style>

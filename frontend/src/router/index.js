@@ -1,7 +1,7 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 
-const routes = [
+export const routes = [
   {
     path: '/',
     name: 'dashboard',
@@ -21,16 +21,22 @@ const routes = [
     meta: { label: 'Assistant IA' }
   },
   {
+    path: '/analysis',
+    name: 'analysis',
+    component: () => import('../views/AnalysisView.vue'),
+    meta: { label: 'Analyse documentaire' }
+  },
+  {
     path: '/history',
     name: 'history',
     component: () => import('../views/HistoryView.vue'),
     meta: { label: 'Historique' }
   },
   {
-    path: '/analysis',
-    name: 'analysis',
-    component: () => import('../views/AnalysisView.vue'),
-    meta: { label: 'Analyse documentaire' }
+    path: '/warehouse',
+    name: 'warehouse',
+    component: () => import('../views/WarehouseView.vue'),
+    meta: { label: 'Entrepôt de données' }
   },
   {
     path: '/settings',
@@ -39,9 +45,9 @@ const routes = [
     meta: { label: 'Paramètres' }
   },
 
-  // Compatibilité avec les anciennes adresses
-  { path: '/historique', redirect: '/history' },
+  // Compatibilité avec les anciens liens
   { path: '/analyse', redirect: '/analysis' },
+  { path: '/historique', redirect: '/history' },
   { path: '/parametres', redirect: '/settings' }
 ]
 
