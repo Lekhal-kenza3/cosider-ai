@@ -1,13 +1,6 @@
 
 <script setup>
-import {
-  ref,
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  watch
-} from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 
 const STORAGE_KEY = 'cosider_historique'
 
@@ -49,29 +42,30 @@ const suggestions = [
 
 const conversationCommencee = computed(() => messages.value.length > 0)
 
-const conversationsFiltrees = computed(() => {
-  const recherche = rechercheHistorique.value.trim().toLowerCase()
-
-  return [...conversations.value]
-    .filter(c => (c.titre || '').toLowerCase().includes(recherche))
+const conversationsFiltrees = computed(() =>
+  [...conversations.value]
+    .filter(c =>
+      (c.titre || '')
+        .toLowerCase()
+        .includes(rechercheHistorique.value.trim().toLowerCase())
+    )
     .sort((a, b) => (b.modifieLe || 0) - (a.modifieLe || 0))
-})
+)
 
 function sauvegarderHistorique() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations.value))
-  } catch (erreur) {
-    console.error('Impossible de sauvegarder l’historique :', erreur)
+  } catch (e) {
+    console.error('Erreur sauvegarde historique :', e)
   }
 }
 
 function chargerHistorique() {
   try {
-    const donnees = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-    conversations.value = Array.isArray(donnees) ? donnees : []
-  } catch (erreur) {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    conversations.value = Array.isArray(data) ? data : []
+  } catch (e) {
     conversations.value = []
-    console.error('Impossible de charger l’historique :', erreur)
   }
 }
 
@@ -162,12 +156,14 @@ async function envoyerMessage() {
   conversation.modifieLe = maintenant
 
   sauvegarderHistorique()
+
   await nextTick()
   defilerEnBas()
 }
 
 function supprimerConversation(id) {
   const conversation = conversations.value.find(c => c.id === id)
+
   if (!conversation) return
 
   if (!window.confirm(`Supprimer « ${conversation.titre} » ?`)) return
@@ -191,6 +187,7 @@ function renommerConversation(conversation) {
 
   conversation.titre = titre.trim()
   conversation.modifieLe = Date.now()
+
   sauvegarderHistorique()
 }
 
@@ -218,7 +215,7 @@ onUnmounted(() => {
 <template>
   <div class="chat-page">
 
-    <!-- TITRE DE LA PAGE NORMALE -->
+    <!-- EN-TÊTE -->
     <header class="page-header">
       <div>
         <div class="eyebrow">
@@ -236,17 +233,12 @@ onUnmounted(() => {
         </p>
       </div>
 
-      <button
-        type="button"
-        class="new-chat-btn"
-        @click="nouvelleConversation"
-      >
-        <span class="plus-icon">+</span>
-        Nouvelle conversation
+      <button class="new-chat-btn" @click="nouvelleConversation">
+        + Nouvelle conversation
       </button>
     </header>
 
-    <!-- BANNIÈRE CHANTIER -->
+    <!-- BANNIÈRE -->
     <section class="hero-banner">
       <div class="hero-copy">
         <span class="hero-pill">
@@ -254,7 +246,7 @@ onUnmounted(() => {
         </span>
 
         <h2>
-          L'intelligence artificielle<br />
+          L'intelligence artificielle<br>
           au service de <span>vos projets.</span>
         </h2>
 
@@ -269,8 +261,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="hero-photo" aria-hidden="true"></div>
-      <div class="hero-red-shape" aria-hidden="true"></div>
+      <div class="hero-photo"></div>
+      <div class="hero-red-shape"></div>
     </section>
 
     <!-- ESPACE ASSISTANT -->
@@ -279,7 +271,7 @@ onUnmounted(() => {
       :class="{ 'mode-plein-ecran': modePleinEcran }"
     >
 
-      <!-- HISTORIQUE BLANC MODERNE -->
+      <!-- HISTORIQUE -->
       <aside
         v-if="modePleinEcran"
         class="chat-history"
@@ -294,9 +286,8 @@ onUnmounted(() => {
             </div>
 
             <button
-              type="button"
               class="history-close"
-              title="Fermer l'historique"
+              title="Masquer l'historique"
               @click="basculerHistorique"
             >
               ×
@@ -304,35 +295,24 @@ onUnmounted(() => {
           </div>
 
           <button
-            type="button"
             class="history-new-button"
             @click="nouvelleConversation"
           >
-            <span>＋</span>
-            Nouvelle conversation
+            ＋ Nouvelle conversation
           </button>
 
           <div class="history-search">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m16 16 5 5" />
-            </svg>
-
+            <span>⌕</span>
             <input
               v-model="rechercheHistorique"
-              type="search"
               placeholder="Rechercher une conversation..."
-            />
+            >
           </div>
 
           <div class="history-items">
-            <p class="history-section-title">Vos discussions</p>
+            <p class="history-section-title">
+              Vos discussions
+            </p>
 
             <div
               v-for="conversation in conversationsFiltrees"
@@ -344,25 +324,10 @@ onUnmounted(() => {
               }"
             >
               <button
-                type="button"
                 class="history-item-title"
                 @click="ouvrirConversation(conversation)"
               >
-                <svg
-                  class="history-item-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5
-                       9 9 0 0 1-4-.9L3 20l.9-4.5
-                       A8.5 8.5 0 1 1 20 11.5Z"
-                  />
-                </svg>
-
+                <span class="history-item-icon">▤</span>
                 <span class="history-item-name">
                   {{ conversation.titre }}
                 </span>
@@ -370,7 +335,6 @@ onUnmounted(() => {
 
               <div class="history-actions">
                 <button
-                  type="button"
                   title="Renommer"
                   @click="renommerConversation(conversation)"
                 >
@@ -378,7 +342,6 @@ onUnmounted(() => {
                 </button>
 
                 <button
-                  type="button"
                   title="Supprimer"
                   @click="supprimerConversation(conversation.id)"
                 >
@@ -406,43 +369,18 @@ onUnmounted(() => {
         </div>
       </aside>
 
-      <!-- PARTIE ASSISTANT -->
+      <!-- COLONNE PRINCIPALE -->
       <div class="assistant-column">
 
-        <!-- BOUTONS PLEIN ÉCRAN -->
+        <!-- COMMANDES -->
         <div class="history-toggle-bar">
           <div class="toggle-left">
             <button
-              type="button"
               class="history-toggle-button"
-              :title="
-                modePleinEcran
-                  ? 'Réduire l’assistant'
-                  : 'Agrandir l’assistant'
-              "
+              :title="modePleinEcran ? 'Réduire' : 'Agrandir'"
               @click="basculerPleinEcran"
             >
-              <svg
-                v-if="!modePleinEcran"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" />
-              </svg>
-
-              <svg
-                v-else
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <path d="M3 9h6V3M21 9h-6V3M3 15h6v6M21 15h-6v6" />
-              </svg>
+              {{ modePleinEcran ? '↙' : '⛶' }}
             </button>
 
             <span class="toggle-label">
@@ -451,29 +389,18 @@ onUnmounted(() => {
 
             <button
               v-if="modePleinEcran"
-              type="button"
               class="history-toggle-button"
-              :title="
-                historiqueOuvert
-                  ? 'Masquer les conversations'
-                  : 'Afficher les conversations'
-              "
+              title="Afficher ou masquer l'historique"
               @click="basculerHistorique"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                aria-hidden="true"
-              >
-                <rect x="3" y="4" width="18" height="16" rx="2" />
-                <path d="M9 4v16" />
-              </svg>
+              ☰
             </button>
           </div>
 
-          <span v-if="modePleinEcran" class="fullscreen-label">
+          <span
+            v-if="modePleinEcran"
+            class="fullscreen-label"
+          >
             <strong>COSIDER AI</strong> · Mode plein écran
           </span>
         </div>
@@ -497,89 +424,27 @@ onUnmounted(() => {
             </span>
           </div>
 
-          <!-- MESSAGES ET ACCUEIL -->
-          <div ref="zoneMessages" class="chat-messages">
+          <!-- MESSAGES -->
+          <div
+            ref="zoneMessages"
+            class="chat-messages"
+          >
 
-            <!-- ACCUEIL AVEC ROBOT -->
-            <div v-if="!conversationCommencee" class="welcome">
+            <!-- ACCUEIL -->
+            <div
+              v-if="!conversationCommencee"
+              class="welcome"
+            >
 
+              <!-- NOUVEAU ROBOT COSIDER -->
               <div class="robot-area">
                 <div class="robot-glow"></div>
 
-                <svg
-                  class="robot-svg"
-                  viewBox="0 0 200 180"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
+                <img
+                  src="/images/robot-cosider.png"
+                  alt="Mascotte robot COSIDER AI avec casque de chantier"
+                  class="robot-image"
                 >
-                  <path
-                    d="M100 38 V23"
-                    stroke="#aeb8c5"
-                    stroke-width="6"
-                    stroke-linecap="round"
-                  />
-
-                  <circle cx="100" cy="19" r="9" fill="#d50025" />
-
-                  <rect
-                    x="25" y="72"
-                    width="20" height="40" rx="9"
-                    fill="#cdd4dd"
-                  />
-
-                  <rect
-                    x="155" y="72"
-                    width="20" height="40" rx="9"
-                    fill="#cdd4dd"
-                  />
-
-                  <rect
-                    x="36" y="42"
-                    width="128" height="102" rx="34"
-                    fill="#e9edf2"
-                    stroke="#cdd4dd"
-                    stroke-width="3"
-                  />
-
-                  <rect
-                    x="49" y="57"
-                    width="102" height="70" rx="24"
-                    fill="#283448"
-                  />
-
-                  <ellipse
-                    cx="78" cy="90" rx="9" ry="12"
-                    fill="#ffffff"
-                  />
-
-                  <ellipse
-                    cx="122" cy="90" rx="9" ry="12"
-                    fill="#ffffff"
-                  />
-
-                  <path
-                    d="M87 110 Q100 121 113 110"
-                    fill="none"
-                    stroke="#ff6d82"
-                    stroke-width="4"
-                    stroke-linecap="round"
-                  />
-
-                  <rect
-                    x="67" y="143"
-                    width="66" height="28" rx="14"
-                    fill="#c90023"
-                  />
-
-                  <rect
-                    x="88" y="149"
-                    width="24" height="14" rx="7"
-                    fill="#ffffff"
-                  />
-                </svg>
-
-                <span class="robot-sparkle sparkle-one">✦</span>
-                <span class="robot-sparkle sparkle-two">✧</span>
               </div>
 
               <span class="welcome-kicker">
@@ -606,7 +471,6 @@ onUnmounted(() => {
                 <button
                   v-for="suggestion in suggestions"
                   :key="suggestion.titre"
-                  type="button"
                   class="suggestion-card"
                   @click="utiliserSuggestion(suggestion.question)"
                 >
@@ -672,7 +536,6 @@ onUnmounted(() => {
                 v-model="saisie"
                 rows="2"
                 placeholder="Écrivez votre question à COSIDER AI..."
-                aria-label="Votre question"
                 @keydown.enter.exact.prevent="envoyerMessage"
               ></textarea>
 
@@ -682,22 +545,12 @@ onUnmounted(() => {
                 </span>
 
                 <button
-                  type="button"
                   class="send-button"
                   :disabled="!saisie.trim()"
-                  aria-label="Envoyer le message"
+                  title="Envoyer"
                   @click="envoyerMessage"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="m5 12 14-7-4 14-3-6-7-1Z" />
-                    <path d="m12 13 7-8" />
-                  </svg>
+                  ➤
                 </button>
               </div>
             </div>
@@ -707,6 +560,7 @@ onUnmounted(() => {
               <span>— Interface de démonstration</span>
             </p>
           </div>
+
         </section>
       </div>
     </div>
@@ -714,64 +568,52 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* ========================================
-   PAGE COSIDER
-======================================== */
+* {
+  box-sizing: border-box;
+}
 
 .chat-page {
   width: 100%;
   max-width: 1550px;
   margin: 0 auto;
-  padding-bottom: 28px;
-  color: #222733;
-  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  padding: 28px 30px 40px;
+  font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif;
+  color: #242832;
 }
 
-.chat-page * {
-  box-sizing: border-box;
-}
-
-button,
-input,
-textarea {
-  font-family: inherit;
-}
-
-/* ========================================
-   EN-TÊTE
-======================================== */
+/* EN-TÊTE */
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
   gap: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 25px;
 }
 
 .eyebrow {
   display: flex;
   align-items: center;
-  gap: 9px;
-  color: #c40024;
+  gap: 10px;
+  color: #a60a27;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1.5px;
+  margin-bottom: 12px;
 }
 
 .eyebrow-line {
-  width: 20px;
-  height: 3px;
+  width: 22px;
+  height: 2px;
   background: #c90023;
-  border-radius: 5px;
 }
 
 .page-header h1 {
-  font-size: clamp(27px, 3vw, 36px);
+  font-size: clamp(25px, 3vw, 37px);
+  line-height: 1.2;
+  margin: 0 0 10px;
   font-weight: 800;
   letter-spacing: -1px;
-  margin: 12px 0 8px;
 }
 
 .page-header h1 span {
@@ -779,281 +621,706 @@ textarea {
 }
 
 .page-header p {
-  font-size: 12px;
-  line-height: 1.8;
-  color: #9299a5;
+  margin: 0;
+  color: #858b97;
+  font-size: 13px;
 }
 
 .new-chat-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 12px 17px;
-  border: 1px solid #c90023;
+  border: none;
+  border-radius: 10px;
   background: #c90023;
   color: white;
-  border-radius: 9px;
-  font-size: 12px;
-  font-weight: 800;
+  padding: 13px 19px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 7px 17px #c900231a;
+  white-space: nowrap;
 }
 
 .new-chat-btn:hover {
-  background: #a9001c;
+  background: #a8001d;
 }
 
-.plus-icon {
-  font-size: 20px;
-  font-weight: 400;
-  line-height: 1;
-}
-
-/* ========================================
-   BANNIÈRE CHANTIER
-======================================== */
+/* BANNIÈRE */
 
 .hero-banner {
   position: relative;
-  min-height: 230px;
   display: flex;
   align-items: center;
-  overflow: hidden;
-  background: linear-gradient(110deg, #8e0018, #d10025);
+  min-height: 205px;
   border-radius: 17px;
-  margin-bottom: 23px;
-  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(
+    115deg,
+    #a6001e 0%,
+    #d20b2c 65%,
+    #ef3a4e 100%
+  );
+  margin-bottom: 24px;
 }
 
 .hero-copy {
   position: relative;
   z-index: 3;
-  padding: 30px 37px;
   width: 65%;
+  padding: 30px 36px;
   color: white;
 }
 
 .hero-pill {
   display: inline-block;
-  border: 1px solid #ffffff50;
-  background: #ffffff20;
-  border-radius: 6px;
-  padding: 7px 10px;
   font-size: 9px;
   font-weight: 800;
-  letter-spacing: 1.2px;
-  margin-bottom: 14px;
+  letter-spacing: 1.1px;
+  padding: 7px 11px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 20px;
+  background: rgba(255,255,255,.1);
+  margin-bottom: 13px;
 }
 
 .hero-copy h2 {
-  font-size: clamp(23px, 2.8vw, 34px);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.6px;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
+  font-size: clamp(20px, 2.4vw, 30px);
+  line-height: 1.24;
+  letter-spacing: -.5px;
 }
 
 .hero-copy h2 span {
-  color: #ffd7df;
+  color: #ffe0e4;
 }
 
 .hero-copy p {
+  max-width: 430px;
   font-size: 12px;
-  line-height: 1.8;
-  max-width: 480px;
-  color: #ffe7ec;
+  line-height: 1.7;
+  color: #ffe4e8;
+  margin: 0 0 16px;
 }
 
 .hero-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 20px;
   font-size: 10px;
-  font-weight: 700;
+  color: #fff2f4;
 }
 
 .indicator-dot {
-  width: 8px;
-  height: 8px;
-  background: #8ef1ad;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(255,255,255,.15);
 }
 
 .hero-photo {
   position: absolute;
-  z-index: 1;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 48%;
-  background-image:
-    linear-gradient(90deg, #b80022aa, #1b1b1b12),
-    url('/images/chantier.jpg');
-  background-size: cover;
-  background-position: center;
-  clip-path: polygon(28% 0, 100% 0, 100% 100%, 0 100%);
+  inset: 0 0 0 52%;
+  background:
+    linear-gradient(90deg, #c90023 0%, transparent 55%),
+    url('/images/chantier.jpg') center / cover;
+  opacity: .65;
 }
 
 .hero-red-shape {
   position: absolute;
-  z-index: 2;
-  right: -55px;
-  bottom: -100px;
-  width: 220px;
-  height: 300px;
-  background: #e3002c;
-  transform: rotate(38deg);
-  opacity: 0.85;
+  width: 270px;
+  height: 270px;
+  right: 20%;
+  top: -150px;
+  border: 55px solid rgba(255,255,255,.07);
+  border-radius: 50%;
 }
 
-/* ========================================
-   ESPACE ASSISTANT
-======================================== */
+/* ESPACE CHAT */
 
 .assistant-workspace {
   display: flex;
   width: 100%;
-  min-width: 0;
-  align-items: stretch;
+  min-height: 630px;
+  background: white;
+  border: 1px solid #eceef2;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 30px rgba(22,29,43,.035);
 }
 
 .assistant-column {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ========================================
-   HISTORIQUE BLANC MODERNE
-======================================== */
+.history-toggle-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 18px;
+  min-height: 48px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f2;
+}
+
+.toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-toggle-button {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  background: #f7f8fa;
+  color: #4b5563;
+  border: 1px solid #e9ebef;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 17px;
+}
+
+.history-toggle-button:hover {
+  background: #fff0f2;
+  color: #c90023;
+}
+
+.toggle-label,
+.fullscreen-label {
+  font-size: 11px;
+  color: #747c89;
+}
+
+.fullscreen-label strong {
+  color: #c90023;
+}
+
+.assistant-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.panel-topbar {
+  min-height: 65px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 24px;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.assistant-info {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.assistant-icon {
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 37px;
+  border-radius: 10px;
+  background: #c90023;
+  color: white;
+  font-size: 22px;
+}
+
+.assistant-info strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.assistant-info span {
+  display: block;
+  color: #9299a4;
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.demo-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: #858b95;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #24ad78;
+}
+
+/* MESSAGES */
+
+.chat-messages {
+  flex: 1;
+  min-height: 0;
+  max-height: 650px;
+  overflow-y: auto;
+  background:
+    radial-gradient(
+      ellipse at 50% 15%,
+      rgba(255,238,241,.6),
+      transparent 55%
+    ),
+    #fff;
+}
+
+.welcome {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 20px 30px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* NOUVEAU ROBOT COSIDER AI */
+
+.robot-area {
+  position: relative;
+  width: 300px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 4px;
+}
+
+.robot-glow {
+  position: absolute;
+  width: 185px;
+  height: 145px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(245,200,207,.32),
+    transparent 70%
+  );
+  filter: blur(12px);
+}
+
+.robot-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 300px;
+  height: 250px;
+  object-fit: contain;
+  border-radius: 12px;
+  mix-blend-mode: multiply;
+}
+
+/* TITRES ACCUEIL */
+
+.welcome-kicker {
+  font-size: 10px;
+  font-weight: 800;
+  color: #c90023;
+  letter-spacing: 2px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.welcome h2 {
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.3;
+  letter-spacing: -.8px;
+  font-weight: 800;
+  margin: 0 0 12px;
+}
+
+.welcome h2 span {
+  display: block;
+  color: #c90023;
+}
+
+.welcome-description {
+  max-width: 480px;
+  margin: 0 auto 25px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #8a919c;
+}
+
+.section-title {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.section-title span {
+  color: #9a9fa9;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}
+
+.section-title div {
+  flex: 1;
+  height: 1px;
+  background: #eceef1;
+}
+
+/* SUGGESTIONS */
+
+.suggestions-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.suggestion-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  min-height: 80px;
+  border: 1px solid #ebedf0;
+  border-radius: 11px;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  transition: .2s ease;
+}
+
+.suggestion-card:hover {
+  border-color: #f2b6c0;
+  background: #fff9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 20px rgba(190,0,35,.06);
+}
+
+.suggestion-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #fff0f2;
+  color: #c90023;
+  font-size: 21px;
+}
+
+.suggestion-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestion-text strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #2d3038;
+  margin-bottom: 5px;
+}
+
+.suggestion-text small {
+  display: block;
+  font-size: 10px;
+  color: #9299a3;
+  line-height: 1.4;
+}
+
+.suggestion-arrow {
+  font-size: 17px;
+  color: #c90023;
+}
+
+/* CONVERSATION */
+
+.conversation {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 25px;
+}
+
+.conversation-date {
+  text-align: center;
+  color: #a2a7b0;
+  font-size: 11px;
+  margin-bottom: 25px;
+}
+
+.message-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.user-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 35px;
+  height: 35px;
+  background: #c90023;
+  color: white;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.message-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.message-header strong {
+  font-size: 12px;
+}
+
+.message-header span {
+  font-size: 10px;
+  color: #a1a7b0;
+}
+
+.message-bubble {
+  display: inline-block;
+  max-width: 100%;
+  padding: 13px 16px;
+  background: #f6f7f9;
+  border-radius: 0 12px 12px 12px;
+  color: #424853;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.demo-notice {
+  display: flex;
+  gap: 12px;
+  padding: 17px;
+  border: 1px solid #f5d9de;
+  background: #fff9fa;
+  border-radius: 12px;
+}
+
+.notice-icon {
+  color: #c90023;
+  font-size: 21px;
+}
+
+.demo-notice strong {
+  font-size: 12px;
+}
+
+.demo-notice p {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #858c98;
+}
+
+/* COMPOSER */
+
+.composer-area {
+  padding: 16px 25px 13px;
+  background: white;
+  border-top: 1px solid #f0f1f3;
+}
+
+.composer {
+  max-width: 850px;
+  margin: 0 auto;
+  border: 1px solid #e4e6eb;
+  border-radius: 13px;
+  padding: 12px 15px 9px;
+  transition: border-color .2s;
+}
+
+.composer:focus-within {
+  border-color: #d36b7e;
+}
+
+.composer textarea {
+  display: block;
+  width: 100%;
+  resize: none;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: #303640;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.composer textarea::placeholder {
+  color: #a2a8b1;
+}
+
+.composer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 7px;
+}
+
+.composer-label {
+  font-size: 10px;
+  color: #b0b5bd;
+}
+
+.send-button {
+  display: grid;
+  place-items: center;
+  width: 33px;
+  height: 33px;
+  border: none;
+  border-radius: 9px;
+  background: #c90023;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.send-button:disabled {
+  background: #e6e7eb;
+  color: #b4b7bf;
+  cursor: not-allowed;
+}
+
+.footer-note {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 10px;
+  color: #9ca3ae;
+}
+
+.footer-note span {
+  color: #b5bac2;
+}
+
+/* HISTORIQUE BLANC */
 
 .chat-history {
   width: 290px;
-  min-width: 290px;
+  flex-shrink: 0;
   overflow: hidden;
   background: #fafbfc;
-  color: #202633;
-  border-right: 1px solid #e6e8ed;
-  border-radius: 15px 0 0 15px;
-  transition:
-    width 0.3s ease,
-    min-width 0.3s ease,
-    opacity 0.3s ease;
+  border-right: 1px solid #e9ebef;
+  transition: width .25s ease;
 }
 
-.chat-history.chat-history-hidden {
-  width: 0;
-  min-width: 0;
-  opacity: 0;
-  pointer-events: none;
+.chat-history-hidden {
+  width: 0 !important;
+  border-right: none;
 }
 
 .history-content {
-  width: 290px;
-  height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 20px 13px;
+  width: 290px;
+  height: 100%;
+  min-height: 0;
+  padding: 21px 14px 14px;
 }
 
 .history-heading {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  padding: 5px 10px 22px;
-}
-
-.history-heading > div {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
+  padding: 0 7px 20px;
 }
 
 .history-heading strong {
-  color: #202633;
+  display: block;
   font-size: 18px;
   font-weight: 800;
+  color: #242832;
 }
 
 .history-heading small {
+  display: block;
+  margin-top: 6px;
+  color: #9ba2ad;
   font-size: 9px;
-  letter-spacing: 1.3px;
-  color: #777f8d;
   font-weight: 700;
+  letter-spacing: 1.3px;
 }
 
 .history-close {
   border: none;
   background: transparent;
-  color: #323946;
+  color: #9ba2ad;
+  font-size: 23px;
   cursor: pointer;
-  font-size: 24px;
-  line-height: 1;
-}
-
-.history-close:hover {
-  color: #c90023;
 }
 
 .history-new-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 14px;
+  width: 100%;
+  padding: 13px 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: 9px;
   background: #c90023;
   color: white;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 5px 12px #c900231a;
-}
-
-.history-new-button span {
-  font-size: 20px;
+  text-align: left;
 }
 
 .history-new-button:hover {
-  background: #a9001c;
+  background: #a9001d;
 }
 
 .history-search {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin-top: 18px;
-  padding: 12px;
-  border: 1px solid #e1e5eb;
-  border-radius: 10px;
-  background: #ffffff;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 0 11px;
+  height: 39px;
+  border: 1px solid #e8eaf0;
+  border-radius: 8px;
+  background: white;
 }
 
-.history-search:focus-within {
-  border-color: #c90023;
-  box-shadow: 0 0 0 3px #c900230f;
-}
-
-.history-search svg {
-  width: 17px;
-  height: 17px;
-  flex-shrink: 0;
-  color: #778190;
+.history-search span {
+  color: #9da4ae;
+  font-size: 20px;
 }
 
 .history-search input {
-  width: 100%;
+  flex: 1;
   min-width: 0;
-  background: transparent;
   border: none;
   outline: none;
-  color: #202633;
+  background: transparent;
   font-size: 11px;
+  color: #4d5561;
 }
 
 .history-search input::placeholder {
-  color: #9199a6;
+  color: #adb3bd;
 }
 
 .history-items {
@@ -1064,54 +1331,50 @@ textarea {
 }
 
 .history-section-title {
-  color: #343b47;
-  font-size: 12px;
+  padding: 0 9px;
+  margin: 0 0 12px;
+  color: #a0a7b1;
+  font-size: 10px;
   font-weight: 800;
-  margin: 0 7px 13px;
+  letter-spacing: .7px;
 }
 
 .history-item {
   display: flex;
   align-items: center;
-  border-radius: 9px;
-  margin-bottom: 6px;
-  transition: background 0.2s ease;
+  border-radius: 8px;
+  margin-bottom: 5px;
+  border-left: 3px solid transparent;
 }
 
 .history-item:hover {
-  background: #f5e9ec;
+  background: #f1f2f5;
 }
 
-.history-item.history-item-active {
-  background: #fde9ed;
-  border-left: 3px solid #c90023;
+.history-item-active {
+  background: #fff0f2;
+  border-left-color: #c90023;
 }
 
 .history-item-title {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex: 1;
+  gap: 10px;
   min-width: 0;
-  padding: 12px 8px;
+  padding: 12px 7px;
   background: transparent;
   border: none;
-  color: #29313e;
   cursor: pointer;
   text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.history-item-active .history-item-title {
-  color: #a9001d;
-  font-weight: 800;
 }
 
 .history-item-icon {
-  width: 17px;
-  height: 17px;
-  flex-shrink: 0;
+  color: #a1a7b0;
+  font-size: 16px;
+}
+
+.history-item-active .history-item-icon {
   color: #c90023;
 }
 
@@ -1119,20 +1382,27 @@ textarea {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  color: #505763;
+  font-size: 11px;
+}
+
+.history-item-active .history-item-name {
+  color: #b00020;
+  font-weight: 700;
 }
 
 .history-actions {
   display: flex;
-  gap: 2px;
+  align-items: center;
   padding-right: 5px;
 }
 
 .history-actions button {
-  border: none;
   background: transparent;
-  color: #778190;
+  border: none;
+  color: #a1a7b0;
+  font-size: 16px;
   cursor: pointer;
-  font-size: 15px;
   padding: 4px;
 }
 
@@ -1141,713 +1411,163 @@ textarea {
 }
 
 .history-empty {
-  color: #8a93a1;
+  padding: 15px 10px;
   font-size: 11px;
+  line-height: 1.7;
+  color: #a1a7b0;
   text-align: center;
-  margin-top: 30px;
-  line-height: 1.8;
 }
 
 .history-bottom {
   display: flex;
   align-items: center;
   gap: 8px;
-  border-top: 1px solid #e3e6eb;
-  padding: 18px 5px 3px;
+  border-top: 1px solid #e9ebef;
+  padding: 16px 7px 4px;
   font-size: 10px;
-  color: #737c89;
+  color: #969da8;
 }
 
 .history-bottom-dot {
   width: 7px;
   height: 7px;
+  background: #28b47b;
   border-radius: 50%;
-  background: #22c55e;
 }
 
-/* ========================================
-   BOUTONS AGRANDIR / RÉDUIRE
-======================================== */
-
-.history-toggle-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 15px;
-  background: white;
-  border: 1px solid #e9ebf0;
-  border-bottom: none;
-  border-radius: 13px 13px 0 0;
-}
-
-.toggle-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.toggle-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #7e8794;
-}
-
-.history-toggle-button {
-  width: 35px;
-  height: 35px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #e4e6ec;
-  border-radius: 8px;
-  background: white;
-  color: #252a35;
-  cursor: pointer;
-}
-
-.history-toggle-button:hover {
-  color: #c90023;
-  background: #fff1f3;
-}
-
-.history-toggle-button svg {
-  width: 20px;
-  height: 20px;
-}
-
-.fullscreen-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #8a93a1;
-}
-
-.fullscreen-label strong {
-  color: #c90023;
-}
-
-/* ========================================
-   PANNEAU ASSISTANT
-======================================== */
-
-.assistant-panel {
-  background: white;
-  border: 1px solid #e9ebf0;
-  border-radius: 0 0 17px 17px;
-  box-shadow: 0 8px 28px #18203308;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 620px;
-}
-
-.panel-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 17px 25px;
-  border-bottom: 1px solid #eff0f3;
-}
-
-.assistant-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.assistant-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: white;
-  background: linear-gradient(145deg, #e11b3c, #a8001c);
-  font-size: 24px;
-}
-
-.assistant-info > div:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.assistant-info strong {
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.assistant-info span {
-  font-size: 10px;
-  color: #99a0ab;
-}
-
-.demo-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 12px;
-  border-radius: 30px;
-  background: #fff5e9;
-  color: #a97825;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #dfa13c;
-}
-
-/* ========================================
-   ACCUEIL
-======================================== */
-
-.chat-messages {
-  flex: 1;
-  min-height: 390px;
-  max-height: 700px;
-  overflow-y: auto;
-  background:
-    radial-gradient(circle at 50% 10%, #fff3f5 0, transparent 45%),
-    #ffffff;
-  padding: 25px;
-}
-
-.welcome {
-  max-width: 850px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 5px 0 25px;
-}
-
-.robot-area {
-  position: relative;
-  width: 170px;
-  height: 145px;
-  margin-bottom: 12px;
-}
-
-.robot-glow {
-  position: absolute;
-  width: 140px;
-  height: 125px;
-  left: 15px;
-  top: 15px;
-  border-radius: 50%;
-  background: #ffe6eb;
-  filter: blur(10px);
-}
-
-.robot-svg {
-  position: relative;
-  z-index: 1;
-  width: 170px;
-  height: 145px;
-  filter: drop-shadow(0 9px 10px #bd14301c);
-}
-
-.robot-sparkle {
-  position: absolute;
-  z-index: 2;
-  color: #d30026;
-  font-size: 22px;
-}
-
-.sparkle-one {
-  left: 2px;
-  top: 30px;
-}
-
-.sparkle-two {
-  right: 1px;
-  bottom: 23px;
-}
-
-.welcome-kicker {
-  font-size: 10px;
-  font-weight: 800;
-  color: #c90023;
-  letter-spacing: 2px;
-  margin-bottom: 12px;
-}
-
-.welcome h2 {
-  font-size: clamp(25px, 3vw, 34px);
-  font-weight: 800;
-  line-height: 1.35;
-  letter-spacing: -0.7px;
-  margin: 0;
-}
-
-.welcome h2 span {
-  display: block;
-  color: #c90023;
-}
-
-.welcome-description {
-  max-width: 510px;
-  color: #929aa7;
-  font-size: 12px;
-  line-height: 1.9;
-  margin: 14px 0 28px;
-}
-
-.section-title {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 16px;
-}
-
-.section-title span {
-  font-size: 10px;
-  font-weight: 800;
-  color: #a0a6b0;
-  letter-spacing: 1.5px;
-  white-space: nowrap;
-}
-
-.section-title div {
-  height: 1px;
-  background: #eceef2;
-  flex: 1;
-}
-
-/* ========================================
-   CARTES DE SUGGESTIONS
-======================================== */
-
-.suggestions-grid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 13px;
-}
-
-.suggestion-card {
-  display: flex;
-  align-items: center;
-  text-align: left;
-  gap: 14px;
-  position: relative;
-  padding: 17px;
-  background: white;
-  border: 1px solid #e9ecf1;
-  border-radius: 13px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.suggestion-card:hover {
-  border-color: #e6a4b0;
-  background: #fff9fa;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px #c9002310;
-}
-
-.suggestion-icon {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: #fff0f3;
-  color: #c90023;
-  font-size: 24px;
-}
-
-.suggestion-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-right: 12px;
-}
-
-.suggestion-text strong {
-  font-size: 12px;
-  font-weight: 800;
-  color: #2a303a;
-}
-
-.suggestion-text small {
-  font-size: 10px;
-  color: #9ba2ae;
-  line-height: 1.5;
-}
-
-.suggestion-arrow {
-  position: absolute;
-  right: 12px;
-  top: 13px;
-  font-size: 15px;
-  color: #bfc4cc;
-}
-
-.suggestion-card:hover .suggestion-arrow {
-  color: #c90023;
-}
-
-/* ========================================
-   CONVERSATION
-======================================== */
-
-.conversation {
-  max-width: 850px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.conversation-date {
-  text-align: center;
-  font-size: 10px;
-  color: #a0a7b2;
-  margin: 12px 0;
-}
-
-.message-row {
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.user-avatar {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 11px;
-  background: #fff0f3;
-  color: #c90023;
-  font-weight: 800;
-  font-size: 12px;
-}
-
-.message-content {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 7px;
-  max-width: 80%;
-}
-
-.message-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 11px;
-}
-
-.message-header span {
-  color: #a0a7b2;
-  font-size: 10px;
-}
-
-.message-bubble {
-  padding: 13px 17px;
-  background: #c90023;
-  color: white;
-  border-radius: 15px 4px 15px 15px;
-  font-size: 12px;
-  line-height: 1.8;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.demo-notice {
-  display: flex;
-  gap: 12px;
-  padding: 17px;
-  background: #fff9fa;
-  border: 1px solid #f2dfe3;
-  border-radius: 13px;
-}
-
-.notice-icon {
-  width: 37px;
-  height: 37px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: #fff0f3;
-  color: #c90023;
-  font-size: 23px;
-}
-
-.demo-notice strong {
-  font-size: 12px;
-}
-
-.demo-notice p {
-  margin-top: 7px;
-  font-size: 11px;
-  line-height: 1.8;
-  color: #8993a0;
-}
-
-/* ========================================
-   ZONE DE SAISIE
-======================================== */
-
-.composer-area {
-  border-top: 1px solid #eef0f3;
-  padding: 18px 25px 14px;
-  background: white;
-}
-
-.composer {
-  max-width: 850px;
-  margin: 0 auto;
-  padding: 13px 15px;
-  border: 1px solid #e4e8ee;
-  border-radius: 13px;
-  background: #fcfcfd;
-}
-
-.composer:focus-within {
-  border-color: #d77a8b;
-  box-shadow: 0 0 0 4px #c9002309;
-}
-
-.composer textarea {
-  display: block;
-  width: 100%;
-  min-height: 48px;
-  max-height: 150px;
-  border: none;
-  outline: none;
-  background: transparent;
-  resize: vertical;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.7;
-  color: #283140;
-}
-
-.composer textarea::placeholder {
-  color: #a0a7b3;
-}
-
-.composer-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.composer-label {
-  color: #9ba3af;
-  font-size: 10px;
-}
-
-.send-button {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border: none;
-  border-radius: 10px;
-  background: #c90023;
-  color: white;
-  cursor: pointer;
-}
-
-.send-button:hover:not(:disabled) {
-  background: #a9001d;
-}
-
-.send-button:disabled {
-  background: #e6c5cc;
-  cursor: not-allowed;
-}
-
-.send-button svg {
-  width: 19px;
-  height: 19px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.footer-note {
-  text-align: center;
-  color: #a4abb5;
-  font-size: 10px;
-  margin: 12px 0 0;
-}
-
-/* ========================================
-   MODE NORMAL
-======================================== */
-
-.assistant-workspace:not(.mode-plein-ecran) .chat-history {
-  display: none;
-}
-
-/* ========================================
-   MODE PLEIN ÉCRAN
-======================================== */
+/* MODE PLEIN ÉCRAN */
 
 .assistant-workspace.mode-plein-ecran {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  max-width: none;
   z-index: 999999;
-  background: #ffffff;
-  display: flex;
-  overflow: hidden;
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  border: none;
   border-radius: 0;
+  background: white;
+  overflow: hidden;
 }
 
 .mode-plein-ecran .chat-history {
-  display: block;
-  width: 290px;
-  min-width: 290px;
   height: 100%;
-  opacity: 1;
-  background: #fafbfc;
-  color: #202633;
-  border-radius: 0;
-  flex-shrink: 0;
-  pointer-events: auto;
-}
-
-.mode-plein-ecran .chat-history.chat-history-hidden {
-  width: 0;
-  min-width: 0;
-  opacity: 0;
-  pointer-events: none;
 }
 
 .mode-plein-ecran .assistant-column {
-  flex: 1;
-  min-width: 0;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.mode-plein-ecran .history-toggle-bar {
-  flex-shrink: 0;
-  border-radius: 0;
-  padding: 13px 20px;
-  border-bottom: 1px solid #edf0f3;
 }
 
 .mode-plein-ecran .assistant-panel {
   flex: 1;
   min-height: 0;
-  height: 100%;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
 }
 
 .mode-plein-ecran .chat-messages {
   flex: 1;
-  min-height: 0;
   max-height: none;
-  overflow-y: auto;
 }
 
 .mode-plein-ecran .welcome {
   min-height: 100%;
   justify-content: center;
+  padding-top: 25px;
+  padding-bottom: 25px;
 }
 
 .mode-plein-ecran .composer-area {
   flex-shrink: 0;
-  padding: 15px 30px;
 }
 
-/* ========================================
-   RESPONSIVE
-======================================== */
+.mode-plein-ecran .robot-area {
+  width: 255px;
+  height: 210px;
+}
+
+.mode-plein-ecran .robot-image {
+  width: 255px;
+  height: 210px;
+}
+
+/* RESPONSIVE */
 
 @media (max-width: 900px) {
+  .chat-page {
+    padding: 20px 16px;
+  }
+
   .hero-copy {
-    width: 80%;
+    width: 78%;
   }
 
   .hero-photo {
-    opacity: 0.4;
-    width: 65%;
+    left: 45%;
   }
 }
 
 @media (max-width: 700px) {
   .page-header {
     align-items: flex-start;
+    flex-direction: column;
   }
 
   .hero-banner {
-    min-height: 250px;
+    min-height: 190px;
   }
 
   .hero-copy {
     width: 100%;
-    padding: 25px;
+    padding: 24px;
   }
 
   .hero-photo {
-    width: 100%;
-    opacity: 0.18;
-  }
-
-  .hero-red-shape {
-    opacity: 0.25;
-  }
-
-  .panel-topbar,
-  .chat-messages,
-  .composer-area {
-    padding-left: 15px;
-    padding-right: 15px;
+    opacity: .2;
+    left: 0;
   }
 
   .suggestions-grid {
     grid-template-columns: 1fr;
   }
 
-  .demo-status,
-  .footer-note span {
-    display: none;
+  .welcome {
+    padding: 20px 16px;
   }
 
-  .message-content {
-    max-width: 85%;
+  .robot-area {
+    width: 190px;
+    height: 160px;
+  }
+
+  .robot-image {
+    width: 190px;
+    height: 160px;
+  }
+
+  .panel-topbar {
+    padding: 12px;
+  }
+
+  .demo-status {
+    font-size: 9px;
+  }
+
+  .composer-area {
+    padding: 12px;
   }
 
   .mode-plein-ecran .chat-history {
     position: absolute;
-    left: 0;
+    z-index: 10;
     top: 0;
     bottom: 0;
-    z-index: 10;
+    left: 0;
     width: 260px;
-    min-width: 260px;
-    box-shadow: 6px 0 24px #1923321a;
+    box-shadow: 10px 0 30px rgba(0,0,0,.08);
   }
 
-  .mode-plein-ecran .chat-history.chat-history-hidden {
-    width: 260px;
-    min-width: 260px;
-    transform: translateX(-100%);
-    opacity: 0;
+  .mode-plein-ecran .chat-history-hidden {
+    width: 0 !important;
   }
 
   .mode-plein-ecran .history-content {
