@@ -1,304 +1,358 @@
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 
-// 1. Variables réactives
-const conversations = ref([])
-const recherche = ref('')
-const conversationSelectionnee = ref(null)
+const STORAGE_KEY = 'cosider-ai-history'
 
-// 2. Charger les conversations depuis localStorage
 function chargerHistorique() {
   try {
-    const sauvegarde = localStorage.getItem('cosider-chat')
-
-    if (!sauvegarde) {
-      conversations.value = []
-      conversationSelectionnee.value = null
-      return
-    }
-
-    const messages = JSON.parse(sauvegarde)
-
-    if (!Array.isArray(messages)) return
-
-    const questions = messages.filter(
-      message => message.role === 'user'
-    )
-
-    // Ne pas afficher une conversation vide
-    if (questions.length === 0) {
-      conversations.value = []
-      conversationSelectionnee.value = null
-      return
-    }
-
-    conversations.value = [
-      {
-        id: 1,
-        titre: questions[0].contenu,
-        date: 'Conversation enregistrée',
-        messages: messages,
-        nombreQuestions: questions.length
-      }
-    ]
-
-  } catch (erreur) {
-    console.error('Erreur de chargement :', erreur)
-    conversations.value = []
-    conversationSelectionnee.value = null
+    const sauvegarde = localStorage.getItem(STORAGE_KEY)
+    const donnees = sauvegarde ? JSON.parse(sauvegarde) : []
+    return Array.isArray(donnees) ? donnees : []
+  } catch {
+    return []
   }
 }
 
-// 3. Recherche dynamique
-const conversationsFiltrees = computed(() => {
-  const mot = recherche.value.toLowerCase().trim()
+const historique = ref(chargerHistorique())
+const recherche = ref('')
+const filtre = ref('Tous')
+const afficherFormulaire = ref(false)
+const nouveauTitre = ref('')
+const nouvelleDescription = ref('')
 
-  return conversations.value.filter(conv => {
-    return (
-      conv.titre.toLowerCase().includes(mot) ||
-      conv.messages.some(message =>
-        String(message.contenu || '')
-          .toLowerCase()
-          .includes(mot)
-      )
-    )
+watch(
+  historique,
+  valeur => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(valeur))
+    } catch {
+      // Le navigateur peut refuser le stockage local.
+    }
+  },
+  { deep: true }
+)
+
+const historiqueFiltre = computed(() => {
+  return historique.value.filter(item => {
+    const texte = recherche.value.toLowerCase()
+
+    const correspondRecherche =
+      item.titre.toLowerCase().includes(texte) ||
+      item.description.toLowerCase().includes(texte)
+
+    const correspondType =
+      filtre.value === 'Tous' || item.type === filtre.value
+
+    return correspondRecherche && correspondType
   })
 })
 
-// 4. Statistiques
 const totalConversations = computed(() =>
-  conversations.value.length
+  historique.value.filter(item => item.type === 'Conversation').length
 )
 
-const totalQuestions = computed(() =>
-  conversations.value.reduce(
-    (total, conv) => total + conv.nombreQuestions,
-    0
-  )
+const totalNotes = computed(() =>
+  historique.value.filter(item => item.type === 'Note').length
 )
 
-const totalMessages = computed(() =>
-  conversations.value.reduce(
-    (total, conv) => total + conv.messages.length,
-    0
-  )
-)
+function ajouterNote() {
+  const titre = nouveauTitre.value.trim()
+  const description = nouvelleDescription.value.trim()
 
-// 5. Ouvrir une conversation
-function ouvrirConversation(conv) {
-  conversationSelectionnee.value = conv
+  if (!titre) return
+
+  historique.value.unshift({
+    id: Date.now().toString(),
+    titre,
+    description,
+    type: 'Note',
+    date: new Date().toLocaleDateString('fr-FR'),
+    heure: new Date().toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  })
+
+  nouveauTitre.value = ''
+  nouvelleDescription.value = ''
+  afficherFormulaire.value = false
 }
 
-// 6. Fermer les détails
-function fermerConversation() {
-  conversationSelectionnee.value = null
-}
-
-// 7. Supprimer une conversation
-function supprimerConversation(id) {
-  if (!confirm('Voulez-vous supprimer cette conversation ?')) {
-    return
+function supprimerElement(id) {
+  if (confirm('Supprimer cet élément de votre historique ?')) {
+    historique.value = historique.value.filter(item => item.id !== id)
   }
-
-  conversations.value = conversations.value.filter(
-    conv => conv.id !== id
-  )
-
-  localStorage.removeItem('cosider-chat')
-  conversationSelectionnee.value = null
 }
 
-// 8. Supprimer tout l'historique
 function effacerHistorique() {
-  if (conversations.value.length === 0) return
-
-  if (!confirm('Voulez-vous effacer tout l’historique ?')) {
-    return
+  if (
+    historique.value.length > 0 &&
+    confirm('Voulez-vous vraiment effacer tout votre historique local ?')
+  ) {
+    historique.value = []
   }
-
-  localStorage.removeItem('cosider-chat')
-  conversations.value = []
-  conversationSelectionnee.value = null
 }
-
-// 9. Charger au démarrage
-onMounted(() => {
-  chargerHistorique()
-})
 </script>
 
 <template>
-  <div class="history-page">
+  <div class="history-page cosider-fade-in">
 
     <!-- EN-TÊTE -->
-    <div class="page-header">
+    <div class="page-heading">
       <div>
-        <h2>Historique des conversations</h2>
+        <span class="eyebrow">COSIDER AI · ACTIVITY CENTER</span>
+        <h1>Votre <span>historique.</span></h1>
         <p>
-          Retrouvez et consultez vos échanges avec COSIDER AI.
+          Retrouvez vos notes et, prochainement,
+          vos conversations et analyses documentaires.
         </p>
       </div>
 
-      <button
-        class="delete-all-btn"
-        :disabled="conversations.length === 0"
-        @click="effacerHistorique"
-      >
-        🗑 Effacer l'historique
-      </button>
+      <RouterLink to="/chat" class="primary-button">
+        <span>＋</span>
+        Nouvelle conversation
+      </RouterLink>
     </div>
+
+    <!-- BANNIÈRE -->
+    <section class="history-banner">
+      <div class="banner-content">
+        <span class="banner-label">VOTRE ESPACE DE SUIVI</span>
+
+        <h2>
+          Chaque information<br />
+          mérite d'être <span>retrouvée.</span>
+        </h2>
+
+        <p>
+          Conservez vos notes dans un espace organisé.
+          L'historique automatique de l'assistant IA sera
+          intégré lors de la connexion au backend.
+        </p>
+      </div>
+
+      <div class="banner-visual" aria-hidden="true">
+        <div class="visual-ring"></div>
+        <div class="visual-card">
+          <div class="visual-clock">◷</div>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </section>
 
     <!-- STATISTIQUES -->
     <div class="stats-grid">
-
       <div class="stat-card">
-        <span>Conversations</span>
-        <strong>{{ totalConversations }}</strong>
-        <small>Discussions enregistrées</small>
+        <div class="stat-icon red">◷</div>
+        <div>
+          <span>Éléments enregistrés</span>
+          <strong>{{ historique.length }}</strong>
+          <small>Stockage dans ce navigateur</small>
+        </div>
       </div>
 
       <div class="stat-card">
-        <span>Questions posées</span>
-        <strong>{{ totalQuestions }}</strong>
-        <small>Messages envoyés à l'assistant</small>
+        <div class="stat-icon blue">◈</div>
+        <div>
+          <span>Conversations</span>
+          <strong>{{ totalConversations }}</strong>
+          <small>Synchronisation IA à venir</small>
+        </div>
       </div>
 
       <div class="stat-card">
-        <span>Messages échangés</span>
-        <strong>{{ totalMessages }}</strong>
-        <small>Utilisateur et assistant</small>
+        <div class="stat-icon green">▤</div>
+        <div>
+          <span>Notes personnelles</span>
+          <strong>{{ totalNotes }}</strong>
+          <small>Notes enregistrées localement</small>
+        </div>
       </div>
-
     </div>
 
-    <!-- CONTENU -->
-    <div class="history-layout">
-
-      <!-- LISTE DES CONVERSATIONS -->
-      <section class="history-card">
-        <div class="section-header">
-          <h3>Mes conversations</h3>
-          <span class="count-badge">
-            {{ conversationsFiltrees.length }}
-          </span>
-        </div>
-
-        <input
-          v-model="recherche"
-          type="search"
-          class="search-input"
-          placeholder="Rechercher une conversation..."
-        />
-
-        <div class="conversation-list">
-
-          <div
-            v-for="conv in conversationsFiltrees"
-            :key="conv.id"
-            class="conversation-item"
-            :class="{
-              active: conversationSelectionnee?.id === conv.id
-            }"
-          >
-            <button
-              class="conversation-main"
-              @click="ouvrirConversation(conv)"
-            >
-              <span class="conversation-icon">💬</span>
-
-              <span class="conversation-info">
-                <strong>{{ conv.titre }}</strong>
-                <small>{{ conv.date }}</small>
-                <small>{{ conv.nombreQuestions }} question(s)</small>
-              </span>
-            </button>
-
-            <button
-              class="delete-item-btn"
-              title="Supprimer"
-              @click="supprimerConversation(conv.id)"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div
-            v-if="conversationsFiltrees.length === 0"
-            class="empty-list"
-          >
-            <div class="empty-icon">💬</div>
-            <h4>Aucune conversation trouvée</h4>
-            <p>
-              Discutez avec l'Assistant IA pour créer un historique.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- DÉTAILS DE LA CONVERSATION -->
-      <section class="details-card">
-
-        <template v-if="conversationSelectionnee">
-          <div class="details-header">
-            <div>
-              <h3>Conversation</h3>
-              <p>{{ conversationSelectionnee.nombreQuestions }} question(s)</p>
-            </div>
-
-            <button
-              class="close-btn"
-              @click="fermerConversation"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div class="details-messages">
-            <div
-              v-for="message in conversationSelectionnee.messages"
-              :key="message.id"
-              class="message-row"
-              :class="message.role"
-            >
-              <div class="message-avatar">
-                {{ message.role === 'assistant' ? '✦' : 'U' }}
-              </div>
-
-              <div class="message-content">
-                <span class="message-author">
-                  {{ message.role === 'assistant' ? 'COSIDER AI' : 'Vous' }}
-                </span>
-
-                <div class="message-bubble">
-                  {{ message.contenu }}
-                </div>
-
-                <small v-if="message.heure">
-                  {{ message.heure }}
-                </small>
-              </div>
-            </div>
-          </div>
-        </template>
-
-        <div v-else class="empty-details">
-          <div class="details-placeholder">▤</div>
-          <h3>Sélectionnez une conversation</h3>
+    <!-- HISTORIQUE -->
+    <section class="history-panel">
+      <div class="panel-header">
+        <div>
+          <span class="section-kicker">HISTORY EXPLORER</span>
+          <h2>Activités enregistrées</h2>
           <p>
-            Cliquez sur une conversation à gauche pour
-            afficher les messages échangés.
+            {{ historiqueFiltre.length }} élément(s) affiché(s)
           </p>
         </div>
 
-      </section>
+        <div class="header-actions">
+          <button
+            class="secondary-button"
+            @click="afficherFormulaire = !afficherFormulaire"
+          >
+            + Ajouter une note
+          </button>
+
+          <button
+            class="clear-button"
+            :disabled="historique.length === 0"
+            @click="effacerHistorique"
+          >
+            Effacer
+          </button>
+        </div>
+      </div>
+
+      <!-- FORMULAIRE DE NOTE -->
+      <form
+        v-if="afficherFormulaire"
+        class="note-form"
+        @submit.prevent="ajouterNote"
+      >
+        <div class="form-heading">
+          <strong>Nouvelle note</strong>
+
+          <button
+            type="button"
+            class="close-button"
+            @click="afficherFormulaire = false"
+          >
+            ×
+          </button>
+        </div>
+
+        <input
+          v-model="nouveauTitre"
+          type="text"
+          maxlength="120"
+          placeholder="Titre de la note"
+          required
+        />
+
+        <textarea
+          v-model="nouvelleDescription"
+          rows="3"
+          maxlength="1000"
+          placeholder="Description ou informations à conserver..."
+        ></textarea>
+
+        <button type="submit" class="save-button">
+          Enregistrer la note
+        </button>
+      </form>
+
+      <!-- FILTRES -->
+      <div class="filters">
+        <div class="search-box">
+          <span>⌕</span>
+          <input
+            v-model="recherche"
+            type="search"
+            placeholder="Rechercher dans l'historique..."
+          />
+        </div>
+
+        <div class="filter-buttons">
+          <button
+            v-for="option in ['Tous', 'Conversation', 'Note']"
+            :key="option"
+            :class="{ active: filtre === option }"
+            @click="filtre = option"
+          >
+            {{ option === 'Conversation' ? 'Conversations' :
+               option === 'Note' ? 'Notes' : 'Tous' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- LISTE -->
+      <div v-if="historiqueFiltre.length > 0" class="history-list">
+        <div
+          v-for="item in historiqueFiltre"
+          :key="item.id"
+          class="history-item"
+        >
+          <div class="item-icon">
+            {{ item.type === 'Note' ? '▤' : '◈' }}
+          </div>
+
+          <div class="item-content">
+            <div class="item-top">
+              <strong>{{ item.titre }}</strong>
+              <span class="type-badge">{{ item.type }}</span>
+            </div>
+
+            <p>{{ item.description || 'Aucune description' }}</p>
+
+            <div class="item-date">
+              <span>◷</span>
+              {{ item.date }} · {{ item.heure }}
+            </div>
+          </div>
+
+          <button
+            class="delete-button"
+            aria-label="Supprimer cet élément"
+            title="Supprimer"
+            @click="supprimerElement(item.id)"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      <!-- ÉTAT VIDE -->
+      <div v-else class="empty-state">
+        <div class="empty-symbol">
+          <span>◷</span>
+        </div>
+
+        <h3>
+          {{ recherche || filtre !== 'Tous'
+            ? 'Aucun résultat trouvé'
+            : 'Votre historique commence ici' }}
+        </h3>
+
+        <p>
+          {{
+            recherche || filtre !== 'Tous'
+              ? 'Essayez une autre recherche ou modifiez vos filtres.'
+              : 'Ajoutez votre première note. Vos futures conversations IA pourront également apparaître ici.'
+          }}
+        </p>
+
+        <button
+          v-if="!recherche && filtre === 'Tous'"
+          class="empty-action"
+          @click="afficherFormulaire = true"
+        >
+          + Créer une première note
+        </button>
+      </div>
+    </section>
+
+    <!-- INFORMATION -->
+    <div class="info-panel">
+      <div class="info-icon">✦</div>
+
+      <div>
+        <strong>Un historique intelligent en préparation</strong>
+        <p>
+          Cette version conserve uniquement les notes créées sur
+          cet appareil. La sauvegarde automatique des conversations,
+          la recherche dans les échanges et la synchronisation
+          avec FastAPI seront ajoutées progressivement.
+        </p>
+      </div>
+
+      <RouterLink to="/chat" class="info-link">
+        Assistant IA ↗
+      </RouterLink>
     </div>
 
-    <p class="demo-note">
-      Historique enregistré localement dans ce navigateur.
-      Aucune donnée n'est envoyée à un serveur.
-    </p>
+    <footer class="page-footer">
+      COSIDER AI · Historique documentaire · Version de développement
+    </footer>
 
   </div>
 </template>
@@ -307,334 +361,586 @@ onMounted(() => {
 .history-page {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  color: #273441;
+  gap: 25px;
+  color: #202634;
 }
 
-.page-header {
+.page-heading,
+.panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
   flex-wrap: wrap;
-  gap: 15px;
 }
 
-.page-header h2 {
-  font-size: 24px;
-  font-weight: 700;
+.eyebrow,
+.section-kicker {
+  color: #b51226;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
 }
 
-.page-header p {
-  color: #87939e;
-  font-size: 13px;
-  margin-top: 6px;
+.page-heading h1 {
+  font-size: clamp(27px, 3vw, 36px);
+  font-weight: 800;
+  margin: 10px 0;
 }
 
-.delete-all-btn {
-  padding: 11px 16px;
-  border: 1px solid #f0d4d4;
-  background: #fff4f4;
-  color: #bd5555;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+.page-heading h1 span {
+  color: #b51226;
 }
 
-.delete-all-btn:disabled {
-  opacity: .45;
-  cursor: not-allowed;
+.page-heading p,
+.panel-header p {
+  color: #9199a7;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 6px 0 0;
+}
+
+.primary-button,
+.secondary-button,
+.save-button,
+.empty-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 17px;
+  border: none;
+  border-radius: 11px;
+  background: #b51226;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  transition: all .2s;
+}
+
+.primary-button:hover,
+.save-button:hover,
+.empty-action:hover {
+  background: #961023;
+  transform: translateY(-2px);
+}
+
+.primary-button span {
+  font-size: 19px;
+}
+
+.history-banner {
+  position: relative;
+  min-height: 240px;
+  padding: 35px 42px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 21px;
+  background: linear-gradient(115deg, #980c20, #c31a33 62%, #e64b60);
+  color: white;
+}
+
+.banner-content {
+  position: relative;
+  z-index: 2;
+  max-width: 600px;
+}
+
+.banner-label {
+  color: #ffd8df;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.banner-content h2 {
+  font-size: clamp(27px, 3vw, 38px);
+  line-height: 1.3;
+  margin: 16px 0 12px;
+}
+
+.banner-content h2 span {
+  color: #ffd5dd;
+}
+
+.banner-content p {
+  max-width: 470px;
+  color: #ffe4e8;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.banner-visual {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  right: 75px;
+  display: grid;
+  place-items: center;
+}
+
+.visual-ring {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 50%;
+  box-shadow: 0 0 0 35px rgba(255,255,255,.04);
+}
+
+.visual-card {
+  width: 125px;
+  height: 155px;
+  padding: 19px;
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 19px;
+  background: rgba(255,255,255,.2);
+  backdrop-filter: blur(10px);
+  transform: rotate(-9deg);
+  box-shadow: 0 15px 35px rgba(70,0,15,.2);
+}
+
+.visual-clock {
+  font-size: 38px;
+  margin-bottom: 13px;
+}
+
+.visual-card > span {
+  display: block;
+  height: 6px;
+  background: rgba(255,255,255,.65);
+  border-radius: 10px;
+  margin-bottom: 9px;
+}
+
+.visual-card > span:last-child {
+  width: 60%;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-.stat-card,
-.history-card,
-.details-card {
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px;
   background: white;
-  border: 1px solid #e6e9ed;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(20, 30, 40, .025);
+  border: 1px solid #eaecf1;
+  border-radius: 17px;
 }
 
-.stat-card {
-  padding: 22px;
+.stat-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+  flex-shrink: 0;
+}
+
+.stat-icon.red {
+  background: #fff0f2;
+  color: #b51226;
+}
+
+.stat-icon.blue {
+  background: #eaf2ff;
+  color: #477dcf;
+}
+
+.stat-icon.green {
+  background: #eaf8f0;
+  color: #219668;
+}
+
+.stat-card > div:last-child {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 5px;
 }
 
-.stat-card span,
-.stat-card small {
-  color: #84909a;
-  font-size: 13px;
+.stat-card span {
+  font-size: 11px;
+  color: #8f98a6;
 }
 
 .stat-card strong {
-  font-size: 30px;
+  font-size: 27px;
+  font-weight: 800;
 }
 
-.history-layout {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(0, 1.7fr);
-  gap: 20px;
-  min-height: 490px;
+.stat-card small {
+  font-size: 10px;
+  color: #a0a7b2;
 }
 
-.history-card {
-  padding: 20px;
-  min-width: 0;
+.history-panel {
+  background: white;
+  border: 1px solid #eaecf1;
+  border-radius: 19px;
+  padding: 26px;
+  box-shadow: 0 8px 30px rgba(30,35,50,.025);
 }
 
-.section-header {
+.panel-header h2 {
+  font-size: 19px;
+  margin: 7px 0 0;
+}
+
+.header-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
+  gap: 9px;
 }
 
-.section-header h3,
-.details-header h3 {
-  font-size: 17px;
-  font-weight: 700;
+.secondary-button {
+  background: #fff0f2;
+  color: #b51226;
 }
 
-.count-badge {
-  background: #f7e9df;
-  color: #b76b43;
-  border-radius: 20px;
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 700;
+.secondary-button:hover {
+  background: #fce0e5;
 }
 
-.search-input {
-  width: 100%;
-  border: 1px solid #dce2e7;
-  border-radius: 9px;
-  padding: 12px;
-  outline: none;
-  font-size: 13px;
-  margin-bottom: 20px;
-}
-
-.search-input:focus {
-  border-color: #b76b43;
-}
-
-.conversation-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.conversation-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid #edf0f2;
-  border-radius: 11px;
-  padding: 10px;
-  transition: .2s;
-}
-
-.conversation-item:hover,
-.conversation-item.active {
-  border-color: #d8b69e;
-  background: #fdf8f4;
-}
-
-.conversation-main {
-  display: flex;
-  align-items: center;
-  text-align: left;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-  cursor: pointer;
-}
-
-.conversation-icon {
-  background: #f7e9df;
+.clear-button {
+  padding: 11px 15px;
+  border: 1px solid #e8eaf0;
   border-radius: 10px;
-  padding: 11px;
-  font-size: 18px;
-}
-
-.conversation-info {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-}
-
-.conversation-info strong {
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.conversation-info small {
-  color: #919ca5;
+  background: white;
+  color: #7e8795;
   font-size: 11px;
+  font-weight: 700;
 }
 
-.delete-item-btn {
-  color: #c15d5d;
-  padding: 8px;
-  cursor: pointer;
+.clear-button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 
-.details-card {
+.note-form {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
+  gap: 12px;
+  margin-top: 23px;
+  padding: 20px;
+  background: #fff9fa;
+  border: 1px solid #f4dce1;
+  border-radius: 14px;
 }
 
-.details-header {
+.form-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #edf0f2;
 }
 
-.details-header p {
-  color: #919ca5;
+.form-heading strong {
+  font-size: 13px;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  color: #b51226;
+  font-size: 24px;
+}
+
+.note-form input,
+.note-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e7e9ef;
+  border-radius: 10px;
+  background: white;
+  outline: none;
   font-size: 12px;
-  margin-top: 5px;
+  color: #293241;
+  resize: vertical;
 }
 
-.close-btn {
-  cursor: pointer;
-  color: #7c8993;
+.note-form input:focus,
+.note-form textarea:focus {
+  border-color: #b51226;
 }
 
-.details-messages {
-  padding: 22px;
+.save-button {
+  align-self: flex-start;
+}
+
+.filters {
+  margin-top: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #edf0f3;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #e6e8ee;
+  border-radius: 10px;
+  padding: 0 13px;
+  min-width: 280px;
+  background: #fafbfc;
+}
+
+.search-box span {
+  color: #9aa2ae;
+  font-size: 22px;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 12px 0;
+  font-size: 12px;
+  width: 100%;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.filter-buttons button {
+  padding: 10px 14px;
+  border: 1px solid #e9ebf0;
+  border-radius: 9px;
+  background: white;
+  color: #8992a0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.filter-buttons button.active {
+  background: #b51226;
+  color: white;
+  border-color: #b51226;
+}
+
+.history-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
-  max-height: 540px;
 }
 
-.message-row {
+.history-item {
   display: flex;
-  gap: 10px;
-  max-width: 90%;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 21px 0;
+  border-bottom: 1px solid #f0f1f4;
 }
 
-.message-row.user {
-  align-self: flex-end;
-  flex-direction: row-reverse;
+.history-item:last-child {
+  border-bottom: none;
 }
 
-.message-avatar {
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  border-radius: 9px;
-  background: #f7e9df;
-  color: #b76b43;
+.item-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  font-weight: 700;
+  background: #fff0f2;
+  color: #b51226;
+  font-size: 23px;
+  flex-shrink: 0;
 }
 
-.user .message-avatar {
-  background: #e6edf5;
-  color: #4d7197;
-}
-
-.message-content {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.item-content {
+  flex: 1;
   min-width: 0;
 }
 
-.user .message-content {
-  align-items: flex-end;
+.item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.message-author {
-  font-size: 11px;
+.item-top strong {
+  font-size: 13px;
+}
+
+.type-badge {
+  background: #fff0f2;
+  color: #b51226;
+  padding: 5px 9px;
+  border-radius: 30px;
+  font-size: 10px;
   font-weight: 700;
 }
 
-.message-bubble {
-  padding: 12px 15px;
-  background: #f6f7f9;
-  border-radius: 4px 13px 13px 13px;
-  font-size: 13px;
-  line-height: 1.7;
-  white-space: pre-line;
+.item-content p {
+  color: #8f98a6;
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 9px 0;
   overflow-wrap: anywhere;
 }
 
-.user .message-bubble {
-  background: #b76b43;
-  color: white;
-  border-radius: 13px 4px 13px 13px;
-}
-
-.message-content small {
+.item-date {
+  color: #a0a7b2;
   font-size: 10px;
-  color: #a1aab2;
 }
 
-.empty-list,
-.empty-details {
-  text-align: center;
-  padding: 50px 20px;
-  color: #87939e;
+.item-date span {
+  color: #b51226;
+  margin-right: 5px;
 }
 
-.empty-list h4,
-.empty-details h3 {
-  color: #273441;
-  font-weight: 700;
-  margin-top: 12px;
+.delete-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 9px;
+  background: #fff0f2;
+  color: #b51226;
+  font-size: 21px;
+  flex-shrink: 0;
 }
 
-.empty-list p,
-.empty-details p {
-  font-size: 12px;
-  margin-top: 9px;
-  line-height: 1.7;
+.delete-button:hover {
+  background: #fbdce2;
 }
 
-.empty-icon,
-.details-placeholder {
-  font-size: 35px;
-  color: #b76b43;
-}
-
-.empty-details {
-  margin: auto;
-  max-width: 350px;
-}
-
-.demo-note {
-  font-size: 12px;
-  color: #9aa4ad;
+.empty-state {
+  padding: 65px 20px;
   text-align: center;
 }
 
-@media (max-width: 850px) {
-  .history-layout {
+.empty-symbol {
+  width: 85px;
+  height: 85px;
+  margin: 0 auto 22px;
+  border-radius: 25px;
+  background: #fff0f2;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 12px rgba(255,240,242,.5);
+}
+
+.empty-symbol span {
+  color: #b51226;
+  font-size: 45px;
+}
+
+.empty-state h3 {
+  font-size: 19px;
+  margin: 0;
+}
+
+.empty-state p {
+  max-width: 420px;
+  margin: 12px auto 20px;
+  color: #939baa;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.info-panel {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 22px;
+  border: 1px solid #f1dfe3;
+  border-radius: 15px;
+  background: #fff9fa;
+}
+
+.info-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: #fff0f2;
+  color: #b51226;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+}
+
+.info-panel > div:nth-child(2) {
+  flex: 1;
+}
+
+.info-panel strong {
+  font-size: 12px;
+}
+
+.info-panel p {
+  color: #9199a7;
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 7px 0 0;
+}
+
+.info-link {
+  color: #b51226;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.page-footer {
+  text-align: center;
+  color: #a0a7b2;
+  font-size: 10px;
+}
+
+@media (max-width: 1100px) {
+  .banner-visual {
+    opacity: .4;
+    right: -25px;
+  }
+}
+
+@media (max-width: 800px) {
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .banner-visual {
+    display: none;
+  }
+
+  .info-panel {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .history-banner {
+    padding: 29px 23px;
+  }
+
+  .history-panel {
+    padding: 18px;
+  }
+
+  .search-box {
+    min-width: 100%;
+  }
+
+  .filter-buttons {
+    width: 100%;
+  }
+
+  .header-actions {
+    width: 100%;
   }
 }
 </style>

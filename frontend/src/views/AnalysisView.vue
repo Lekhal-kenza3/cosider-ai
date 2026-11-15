@@ -1,374 +1,402 @@
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
-// Documents fictifs disponibles
-const documents = [
+const fichier = ref(null)
+const analyseEnCours = ref(false)
+const resultatVisible = ref(false)
+const typeAnalyse = ref('complete')
+const glisserActif = ref(false)
+const fileInput = ref(null)
+
+const optionsAnalyse = [
   {
-    id: 1,
-    nom: 'Rapport annuel COSIDER 2025.pdf',
-    type: 'PDF',
-    categorie: 'Rapports',
-    resume: 'Ce rapport présente un aperçu des activités annuelles, des réalisations, des objectifs et des perspectives de développement de l’entreprise.',
-    motsCles: ['COSIDER', 'Rapport annuel', 'Activités', 'Objectifs'],
-    entites: ['COSIDER', '2025', 'Rapport annuel'],
-    confiance: 96
+    id: 'complete',
+    icone: '✦',
+    titre: 'Analyse complète',
+    description: 'Vue d’ensemble du document'
   },
   {
-    id: 2,
-    nom: 'Procédures de sécurité chantier.pdf',
-    type: 'PDF',
-    categorie: 'Sécurité',
-    resume: 'Ce document présente les principales procédures de sécurité sur les chantiers, les mesures de prévention des risques professionnels et les équipements de protection individuelle.',
-    motsCles: ['Sécurité', 'Chantier', 'Prévention', 'EPI'],
-    entites: ['Chantier', 'Équipements de protection', 'Personnel'],
-    confiance: 94
+    id: 'resume',
+    icone: '▤',
+    titre: 'Résumé intelligent',
+    description: 'Synthèse des informations'
   },
   {
-    id: 3,
-    nom: 'Planning des travaux.xlsx',
-    type: 'Excel',
-    categorie: 'Planification',
-    resume: 'Ce fichier présente un planning prévisionnel des travaux, les différentes phases du projet, les échéances et les tâches à réaliser.',
-    motsCles: ['Planning', 'Travaux', 'Délais', 'Projet'],
-    entites: ['Projet', 'Calendrier', 'Équipes'],
-    confiance: 91
-  },
-  {
-    id: 4,
-    nom: 'Cahier des charges.docx',
-    type: 'Word',
-    categorie: 'Technique',
-    resume: 'Ce document décrit les exigences techniques et fonctionnelles, les contraintes du projet et les résultats attendus.',
-    motsCles: ['Exigences', 'Technique', 'Projet', 'Spécifications'],
-    entites: ['Projet', 'Cahier des charges', 'Livrables'],
-    confiance: 93
-  },
-  {
-    id: 5,
-    nom: 'Budget prévisionnel 2026.xlsx',
-    type: 'Excel',
-    categorie: 'Finance',
-    resume: 'Ce document présente une estimation des dépenses, les ressources financières prévues et la répartition budgétaire du projet.',
-    motsCles: ['Budget', 'Finance', 'Dépenses', 'Prévisions'],
-    entites: ['Budget 2026', 'Projet', 'Ressources'],
-    confiance: 95
+    id: 'extraction',
+    icone: '◈',
+    titre: 'Extraction des données',
+    description: 'Identification des éléments clés'
   }
 ]
 
-// Variables réactives
-const documentSelectionne = ref('')
-const analyseEnCours = ref(false)
-const resultat = ref(null)
-const progression = ref(0)
-
-// Document choisi
-const documentActuel = computed(() =>
-  documents.find(doc => doc.id === Number(documentSelectionne.value))
+const nomFichier = computed(() =>
+  fichier.value ? fichier.value.name : 'Aucun document sélectionné'
 )
 
-// Lancer une analyse simulée
+const tailleFichier = computed(() => {
+  if (!fichier.value) return ''
+  return (fichier.value.size / (1024 * 1024)).toFixed(2) + ' Mo'
+})
+
+function ouvrirFichier() {
+  fileInput.value?.click()
+}
+
+function selectionnerFichier(event) {
+  const selection = event.target.files?.[0]
+  if (selection) definirFichier(selection)
+  event.target.value = ''
+}
+
+function deposerFichier(event) {
+  glisserActif.value = false
+  const selection = event.dataTransfer.files?.[0]
+  if (selection) definirFichier(selection)
+}
+
+function definirFichier(selection) {
+  if (!selection.name.toLowerCase().endsWith('.pdf')) {
+    alert('Veuillez sélectionner un fichier PDF.')
+    return
+  }
+
+  if (selection.size > 10 * 1024 * 1024) {
+    alert('Le fichier dépasse la limite de 10 Mo.')
+    return
+  }
+
+  fichier.value = selection
+  resultatVisible.value = false
+}
+
 function lancerAnalyse() {
-  if (!documentActuel.value || analyseEnCours.value) return
+  if (!fichier.value || analyseEnCours.value) return
 
-  const document = documentActuel.value
-
-  analyseEnCours.value = true
-  resultat.value = null
-  progression.value = 0
-
-  const intervalle = setInterval(() => {
-    progression.value = Math.min(progression.value + 10, 100)
-
-    if (progression.value >= 100) {
-      clearInterval(intervalle)
-
-      resultat.value = { ...document }
-      analyseEnCours.value = false
-    }
-  }, 180)
+  // Aucun appel IA n'est encore disponible.
+  // On affiche uniquement un aperçu de la future interface.
+  resultatVisible.value = true
 }
 
-// Réinitialiser
 function reinitialiser() {
-  if (analyseEnCours.value) return
-
-  documentSelectionne.value = ''
-  resultat.value = null
-  progression.value = 0
-}
-
-// Exporter le résultat en texte
-function exporterResultat() {
-  if (!resultat.value) return
-
-  const r = resultat.value
-
-  const contenu = [
-    'COSIDER AI - RAPPORT D ANALYSE (DEMONSTRATION)',
-    '',
-    `Document : ${r.nom}`,
-    `Categorie : ${r.categorie}`,
-    `Score fictif : ${r.confiance}%`,
-    '',
-    'RESUME',
-    r.resume,
-    '',
-    'MOTS-CLES',
-    r.motsCles.join(', '),
-    '',
-    'ENTITES',
-    r.entites.join(', ')
-  ].join('\n')
-
-  const fichier = new Blob([contenu], {
-    type: 'text/plain;charset=utf-8'
-  })
-
-  const url = URL.createObjectURL(fichier)
-  const lien = document.createElement('a')
-
-  lien.href = url
-  lien.download = 'analyse-cosider-demo.txt'
-  lien.click()
-
-  URL.revokeObjectURL(url)
+  fichier.value = null
+  resultatVisible.value = false
+  typeAnalyse.value = 'complete'
 }
 </script>
 
 <template>
-  <div class="analysis-page">
+  <div class="analysis-page cosider-fade-in">
 
     <!-- EN-TÊTE -->
-    <div class="page-header">
+    <div class="page-heading">
       <div>
-        <h2>Analyse documentaire</h2>
+        <span class="eyebrow">COSIDER AI · DOCUMENT ANALYTICS</span>
+        <h1>Analyse <span>intelligente.</span></h1>
         <p>
-          Explorez les informations essentielles de vos documents.
+          Un espace dédié à l'exploration, à la compréhension
+          et à la valorisation de vos documents.
         </p>
       </div>
 
-      <span class="demo-badge">✦ Mode démonstration</span>
+      <div class="heading-symbol">✦</div>
     </div>
 
-    <!-- STATISTIQUES -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <span>Documents disponibles</span>
-        <strong>{{ documents.length }}</strong>
-        <small>Documents de démonstration</small>
+    <!-- BANNIÈRE -->
+    <section class="analysis-hero">
+      <div class="hero-content">
+        <div class="hero-label">✦ DOCUMENT INTELLIGENCE LAB</div>
+
+        <h2>
+          Révélez le potentiel<br />
+          de vos <span>informations.</span>
+        </h2>
+
+        <p>
+          Préparez vos documents pour une analyse structurée :
+          résumé, extraction d'informations et exploration des contenus.
+        </p>
+
+        <div class="hero-features">
+          <span>✓ Résumé documentaire</span>
+          <span>✓ Extraction des données</span>
+          <span>✓ Exploration intelligente</span>
+        </div>
       </div>
 
-      <div class="stat-card">
-        <span>Types d'analyse</span>
-        <strong>3</strong>
-        <small>Résumé, mots-clés, entités</small>
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-orbit"></div>
+        <div class="hero-core">✦</div>
+        <div class="hero-floating one">▤ PDF</div>
+        <div class="hero-floating two">◈ DATA</div>
+      </div>
+    </section>
+
+    <!-- ÉTAPES -->
+    <div class="steps">
+      <div class="step">
+        <span class="step-number active">01</span>
+        <div>
+          <strong>Sélectionner</strong>
+          <small>Votre document PDF</small>
+        </div>
       </div>
 
-      <div class="stat-card">
-        <span>Analyse actuelle</span>
-        <strong>{{ resultat ? '1' : '0' }}</strong>
-        <small>Résultat affiché</small>
+      <div class="step-line"></div>
+
+      <div class="step">
+        <span class="step-number" :class="{ active: fichier }">02</span>
+        <div>
+          <strong>Configurer</strong>
+          <small>Le type d'analyse</small>
+        </div>
+      </div>
+
+      <div class="step-line"></div>
+
+      <div class="step">
+        <span class="step-number" :class="{ active: resultatVisible }">03</span>
+        <div>
+          <strong>Explorer</strong>
+          <small>L'aperçu des résultats</small>
+        </div>
       </div>
     </div>
 
-    <!-- SÉLECTION DU DOCUMENT -->
-    <section class="analysis-card">
-      <div class="section-title">
-        <div class="section-icon">▤</div>
-        <div>
-          <h3>Sélectionner un document</h3>
-          <p>Choisissez le document que vous souhaitez analyser.</p>
-        </div>
-      </div>
+    <!-- ESPACE DE TRAVAIL -->
+    <div class="workspace-grid">
 
-      <div class="selection-area">
-        <select
-          v-model="documentSelectionne"
-          :disabled="analyseEnCours"
-          class="document-select"
-        >
-          <option value="">-- Choisir un document --</option>
+      <!-- DOCUMENT -->
+      <section class="panel upload-panel">
+        <div class="panel-header">
+          <div>
+            <span class="section-kicker">ÉTAPE 01</span>
+            <h3>Votre document</h3>
+            <p>Sélectionnez un PDF à examiner.</p>
+          </div>
 
-          <option
-            v-for="doc in documents"
-            :key="doc.id"
-            :value="doc.id"
-          >
-            {{ doc.nom }}
-          </option>
-        </select>
-
-        <button
-          class="primary-btn"
-          :disabled="!documentSelectionne || analyseEnCours"
-          @click="lancerAnalyse"
-        >
-          {{ analyseEnCours ? 'Analyse en cours...' : '✦ Lancer l’analyse' }}
-        </button>
-      </div>
-
-      <!-- DOCUMENT SÉLECTIONNÉ -->
-      <div v-if="documentActuel" class="selected-document">
-        <div class="file-icon">
-          {{ documentActuel.type }}
-        </div>
-
-        <div>
-          <strong>{{ documentActuel.nom }}</strong>
-          <p>{{ documentActuel.categorie }} · {{ documentActuel.type }}</p>
-        </div>
-      </div>
-
-      <!-- BARRE DE PROGRESSION -->
-      <div v-if="analyseEnCours" class="progress-section">
-        <div class="progress-label">
-          <span>Simulation de l'analyse...</span>
-          <strong>{{ progression }}%</strong>
+          <span class="panel-icon">▤</span>
         </div>
 
         <div
-          class="progress-track"
-          role="progressbar"
-          :aria-valuenow="progression"
-          aria-valuemin="0"
-          aria-valuemax="100"
+          class="upload-zone"
+          :class="{ 'drag-active': glisserActif }"
+          role="button"
+          tabindex="0"
+          @click="ouvrirFichier"
+          @keydown.enter.prevent="ouvrirFichier"
+          @keydown.space.prevent="ouvrirFichier"
+          @dragover.prevent="glisserActif = true"
+          @dragleave.prevent="glisserActif = false"
+          @drop.prevent="deposerFichier"
         >
-          <div
-            class="progress-fill"
-            :style="{ width: progression + '%' }"
-          ></div>
+          <div class="upload-symbol">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path d="M12 16V4m0 0L7 9m5-5 5 5"/>
+              <path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
+            </svg>
+          </div>
+
+          <h4>Déposez votre document</h4>
+          <p>ou cliquez pour parcourir vos fichiers</p>
+
+          <button class="choose-btn" @click.stop="ouvrirFichier">
+            + Choisir un PDF
+          </button>
+
+          <small>Format PDF · 10 Mo maximum</small>
+
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".pdf,application/pdf"
+            hidden
+            @change="selectionnerFichier"
+          />
+        </div>
+
+        <div v-if="fichier" class="selected-file">
+          <div class="selected-icon">PDF</div>
+
+          <div class="selected-info">
+            <strong>{{ nomFichier }}</strong>
+            <span>{{ tailleFichier }} · Prêt pour la démonstration</span>
+          </div>
+
+          <button
+            class="remove-file"
+            aria-label="Retirer le fichier"
+            @click="reinitialiser"
+          >
+            ×
+          </button>
+        </div>
+      </section>
+
+      <!-- OPTIONS -->
+      <section class="panel options-panel">
+        <div class="panel-header">
+          <div>
+            <span class="section-kicker">ÉTAPE 02</span>
+            <h3>Configuration de l'analyse</h3>
+            <p>Choisissez la fonctionnalité à explorer.</p>
+          </div>
+
+          <span class="panel-icon">⚙</span>
+        </div>
+
+        <div class="analysis-options">
+          <label
+            v-for="option in optionsAnalyse"
+            :key="option.id"
+            class="analysis-option"
+            :class="{ selected: typeAnalyse === option.id }"
+          >
+            <input
+              v-model="typeAnalyse"
+              type="radio"
+              :value="option.id"
+            />
+
+            <span class="option-symbol">{{ option.icone }}</span>
+
+            <span class="option-text">
+              <strong>{{ option.titre }}</strong>
+              <small>{{ option.description }}</small>
+            </span>
+
+            <span class="radio-circle"></span>
+          </label>
+        </div>
+
+        <button
+          class="analyze-button"
+          :disabled="!fichier || analyseEnCours"
+          @click="lancerAnalyse"
+        >
+          <span>✦</span>
+          Prévisualiser l'analyse
+          <span>↗</span>
+        </button>
+
+        <p class="analysis-disclaimer">
+          Mode démonstration : aucun contenu PDF n'est encore
+          analysé automatiquement.
+        </p>
+      </section>
+    </div>
+
+    <!-- RÉSULTATS -->
+    <section v-if="resultatVisible" class="results-section">
+      <div class="results-heading">
+        <div>
+          <span class="section-kicker">ÉTAPE 03 · RESULTS CENTER</span>
+          <h2>Aperçu des résultats</h2>
+          <p>
+            Présentation de la future analyse de
+            <strong>{{ nomFichier }}</strong>
+          </p>
+        </div>
+
+        <span class="demo-badge">Démonstration</span>
+      </div>
+
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="result-icon red">✦</div>
+          <h3>Synthèse documentaire</h3>
+          <p>
+            Le résumé du document apparaîtra ici lorsque
+            le moteur d'intelligence artificielle sera connecté.
+          </p>
+          <div class="result-placeholder">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-icon blue">◈</div>
+          <h3>Informations clés</h3>
+          <p>
+            Les dates, entités, concepts et informations importantes
+            pourront être présentés dans cet espace.
+          </p>
+          <div class="result-placeholder">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-icon green">✓</div>
+          <h3>Exploration intelligente</h3>
+          <p>
+            L'assistant pourra ensuite répondre à vos questions
+            à partir des informations extraites.
+          </p>
+
+          <RouterLink to="/chat" class="result-link">
+            Ouvrir l'assistant IA →
+          </RouterLink>
+        </div>
+      </div>
+
+      <div class="results-notice">
+        <span>ⓘ</span>
+        <p>
+          Ces blocs illustrent la présentation prévue des résultats.
+          Aucun résumé, extraction ou diagnostic réel n'a été généré.
+        </p>
+      </div>
+    </section>
+
+    <!-- FONCTIONNALITÉS -->
+    <section class="features-section">
+      <div class="features-heading">
+        <span class="section-kicker">PLATEFORME DOCUMENTAIRE</span>
+        <h2>Une nouvelle manière d'exploiter vos documents</h2>
+        <p>Les fonctionnalités que nous allons développer pour COSIDER AI.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">▤</div>
+          <strong>Centralisation</strong>
+          <p>Rassembler les documents dans un espace unique.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">✦</div>
+          <strong>Compréhension</strong>
+          <p>Produire des synthèses et identifier les idées essentielles.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">◈</div>
+          <strong>Recherche intelligente</strong>
+          <p>Explorer les contenus à l'aide de questions naturelles.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <strong>Productivité</strong>
+          <p>Faciliter l'accès aux informations documentaires.</p>
         </div>
       </div>
     </section>
 
-    <!-- RÉSULTATS -->
-    <template v-if="resultat">
-
-      <div class="results-header">
-        <div>
-          <h3>Résultats de l'analyse</h3>
-          <p>Résultats prédéfinis à titre de démonstration.</p>
-        </div>
-
-        <div class="header-actions">
-          <button class="secondary-btn" @click="reinitialiser">
-            Réinitialiser
-          </button>
-          <button class="primary-btn" @click="exporterResultat">
-            ↓ Exporter TXT
-          </button>
-        </div>
-      </div>
-
-      <!-- RÉSUMÉ -->
-      <section class="analysis-card">
-        <div class="section-title">
-          <div class="section-icon">✦</div>
-          <div>
-            <h3>Résumé du document</h3>
-            <p>Synthèse prédéfinie du document sélectionné</p>
-          </div>
-        </div>
-
-        <p class="summary-text">{{ resultat.resume }}</p>
-      </section>
-
-      <div class="results-grid">
-
-        <!-- MOTS-CLÉS -->
-        <section class="analysis-card">
-          <div class="section-title">
-            <div class="section-icon">#</div>
-            <div>
-              <h3>Mots-clés</h3>
-              <p>Principaux thèmes identifiés</p>
-            </div>
-          </div>
-
-          <div class="keywords">
-            <span
-              v-for="mot in resultat.motsCles"
-              :key="mot"
-              class="keyword"
-            >
-              {{ mot }}
-            </span>
-          </div>
-        </section>
-
-        <!-- ENTITÉS -->
-        <section class="analysis-card">
-          <div class="section-title">
-            <div class="section-icon">◎</div>
-            <div>
-              <h3>Entités identifiées</h3>
-              <p>Informations associées au document</p>
-            </div>
-          </div>
-
-          <div class="entities">
-            <div
-              v-for="entite in resultat.entites"
-              :key="entite"
-              class="entity-row"
-            >
-              <span class="entity-dot"></span>
-              {{ entite }}
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- CLASSIFICATION -->
-      <section class="analysis-card">
-        <div class="section-title">
-          <div class="section-icon">◈</div>
-          <div>
-            <h3>Classification du document</h3>
-            <p>Catégorie et score fictif</p>
-          </div>
-        </div>
-
-        <div class="classification">
-          <div>
-            <span class="field-label">Catégorie</span>
-            <strong class="category-badge">
-              {{ resultat.categorie }}
-            </strong>
-          </div>
-
-          <div class="confidence">
-            <div class="confidence-label">
-              <span>Score de confiance simulé</span>
-              <strong>{{ resultat.confiance }}%</strong>
-            </div>
-
-            <div class="progress-track">
-              <div
-                class="progress-fill"
-                :style="{ width: resultat.confiance + '%' }"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </template>
-
-    <!-- ÉTAT INITIAL -->
-    <div v-else-if="!analyseEnCours" class="empty-state">
-      <div class="empty-icon">✦</div>
-      <h3>Aucune analyse affichée</h3>
-      <p>
-        Sélectionnez un document puis cliquez sur
-        « Lancer l’analyse » pour afficher les résultats.
-      </p>
-    </div>
-
-    <p class="demo-note">
-      Cette page ne lit pas encore le contenu réel des fichiers.
-      Les analyses sont entièrement simulées côté frontend.
-    </p>
+    <footer class="page-footer">
+      COSIDER AI · Document Intelligence Platform · Interface de démonstration
+    </footer>
   </div>
 </template>
 
@@ -376,340 +404,702 @@ function exporterResultat() {
 .analysis-page {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  color: #273441;
+  gap: 26px;
+  color: #202634;
 }
 
-.page-header,
-.results-header,
-.header-actions {
+.page-heading,
+.panel-header,
+.results-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
   flex-wrap: wrap;
-  gap: 14px;
 }
 
-.page-header h2 {
-  font-size: 24px;
-  font-weight: 700;
+.eyebrow,
+.section-kicker {
+  color: #b51226;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
 }
 
-.page-header p,
-.results-header p,
-.section-title p {
-  font-size: 13px;
-  color: #87939e;
-  margin-top: 5px;
+.page-heading h1 {
+  font-size: clamp(27px, 3vw, 36px);
+  font-weight: 800;
+  margin: 10px 0;
 }
 
-.demo-badge {
-  background: #f8eadf;
-  color: #a65e32;
-  border-radius: 30px;
-  padding: 9px 14px;
+.page-heading h1 span {
+  color: #b51226;
+}
+
+.page-heading p,
+.panel-header p,
+.results-heading p {
+  color: #9199a7;
   font-size: 12px;
-  font-weight: 600;
+  line-height: 1.8;
+  margin: 6px 0 0;
 }
 
-.stats-grid {
+.heading-symbol {
+  width: 58px;
+  height: 58px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.stat-card,
-.analysis-card {
-  background: white;
-  border: 1px solid #e6e9ed;
-  border-radius: 15px;
-  padding: 23px;
-  box-shadow: 0 4px 15px rgba(20, 30, 40, .025);
-}
-
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.stat-card span,
-.stat-card small {
-  color: #84909a;
-  font-size: 13px;
-}
-
-.stat-card strong {
+  place-items: center;
+  background: #fff0f2;
+  border: 1px solid #f5d6dc;
+  border-radius: 17px;
+  color: #b51226;
   font-size: 30px;
 }
 
-.section-title {
+.analysis-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 265px;
   display: flex;
   align-items: center;
-  gap: 13px;
-  margin-bottom: 22px;
-}
-
-.section-title h3,
-.results-header h3 {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.section-icon {
-  width: 43px;
-  height: 43px;
-  background: #f7e9df;
-  color: #b76b43;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  font-size: 21px;
-  flex-shrink: 0;
-}
-
-.selection-area {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.document-select {
-  flex: 1;
-  min-width: 220px;
-  border: 1px solid #dce2e7;
-  border-radius: 9px;
-  padding: 12px;
-  background: white;
-  outline: none;
-}
-
-.document-select:focus {
-  border-color: #b76b43;
-}
-
-.primary-btn,
-.secondary-btn {
-  padding: 12px 18px;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.primary-btn {
-  background: #b76b43;
+  border-radius: 21px;
+  padding: 37px 43px;
+  background: linear-gradient(115deg, #990d20, #bd1730 58%, #e64b61);
   color: white;
 }
 
-.primary-btn:hover {
-  background: #975331;
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 630px;
 }
 
-.primary-btn:disabled {
-  opacity: .45;
-  cursor: not-allowed;
+.hero-label {
+  display: inline-block;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.12);
+  padding: 8px 12px;
+  border-radius: 30px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
 }
 
-.secondary-btn {
-  background: white;
-  color: #53616c;
-  border: 1px solid #dce2e7;
+.analysis-hero h2 {
+  font-size: clamp(28px, 3vw, 39px);
+  line-height: 1.3;
+  margin: 17px 0 12px;
 }
 
-.selected-document {
+.analysis-hero h2 span {
+  color: #ffd7de;
+}
+
+.analysis-hero p {
+  color: #ffe3e8;
+  font-size: 12px;
+  line-height: 1.9;
+  max-width: 460px;
+}
+
+.hero-features {
   display: flex;
-  align-items: center;
   gap: 13px;
-  background: #f9fafb;
-  border-radius: 10px;
-  padding: 15px;
-  margin-top: 18px;
-}
-
-.selected-document strong {
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-
-.selected-document p {
-  font-size: 12px;
-  color: #87939e;
-  margin-top: 5px;
-}
-
-.file-icon {
-  background: #fbe8df;
-  color: #b76b43;
-  padding: 12px;
-  border-radius: 9px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.progress-section {
+  flex-wrap: wrap;
   margin-top: 22px;
 }
 
-.progress-label,
-.confidence-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  margin-bottom: 10px;
+.hero-features span {
+  font-size: 10px;
+  color: white;
+  font-weight: 700;
 }
 
-.progress-track {
-  height: 9px;
-  border-radius: 20px;
-  background: #edf0f2;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  border-radius: 20px;
-  background: linear-gradient(90deg, #b76b43, #e1a57e);
-  transition: width .18s ease;
-}
-
-.results-grid {
+.hero-art {
+  position: absolute;
+  width: 270px;
+  height: 270px;
+  right: 65px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  place-items: center;
 }
 
-.summary-text {
-  font-size: 14px;
-  line-height: 1.9;
-  color: #56636d;
-  background: #faf8f6;
-  border-left: 3px solid #b76b43;
-  padding: 18px;
-  border-radius: 0 9px 9px 0;
+.hero-orbit {
+  position: absolute;
+  width: 235px;
+  height: 235px;
+  border: 1px solid rgba(255,255,255,.23);
+  border-radius: 50%;
+  box-shadow: 0 0 0 35px rgba(255,255,255,.035);
 }
 
-.keywords {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.hero-core {
+  width: 110px;
+  height: 110px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 28px;
+  background: rgba(255,255,255,.2);
+  backdrop-filter: blur(10px);
+  display: grid;
+  place-items: center;
+  font-size: 58px;
 }
 
-.keyword {
-  background: #f8eadf;
-  color: #a65e32;
-  padding: 9px 13px;
-  border-radius: 25px;
+.hero-floating {
+  position: absolute;
+  background: white;
+  color: #b51226;
+  padding: 12px 15px;
+  border-radius: 11px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 800;
+  box-shadow: 0 12px 30px rgba(70,0,15,.15);
 }
 
-.entities {
+.hero-floating.one {
+  top: 30px;
+  right: -10px;
+}
+
+.hero-floating.two {
+  bottom: 35px;
+  left: -15px;
+}
+
+.steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 21px;
+  background: white;
+  border: 1px solid #eaecf1;
+  border-radius: 15px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.step-number {
+  width: 39px;
+  height: 39px;
+  display: grid;
+  place-items: center;
+  background: #f3f4f7;
+  color: #9aa2ae;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.step-number.active {
+  background: #b51226;
+  color: white;
+}
+
+.step div {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+}
+
+.step strong {
+  font-size: 12px;
+}
+
+.step small {
+  font-size: 10px;
+  color: #a1a8b3;
+}
+
+.step-line {
+  width: 60px;
+  height: 1px;
+  background: #e6e8ed;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #eaecf1;
+  border-radius: 19px;
+  padding: 25px;
+  box-shadow: 0 8px 30px rgba(30,35,50,.025);
+}
+
+.panel-header h3 {
+  margin: 7px 0 0;
+  font-size: 18px;
+}
+
+.panel-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  background: #fff0f2;
+  color: #b51226;
+  display: grid;
+  place-items: center;
+  font-size: 23px;
+}
+
+.upload-zone {
+  margin-top: 23px;
+  border: 2px dashed #efbdc5;
+  background: #fffafb;
+  border-radius: 15px;
+  min-height: 260px;
+  padding: 25px 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.upload-zone:hover,
+.drag-active {
+  border-color: #b51226;
+  background: #fff1f3;
+}
+
+.upload-symbol {
+  width: 63px;
+  height: 63px;
+  border-radius: 17px;
+  background: white;
+  border: 1px solid #f5d7dd;
+  display: grid;
+  place-items: center;
+  color: #b51226;
+}
+
+.upload-symbol svg {
+  width: 29px;
+  height: 29px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.upload-zone h4 {
+  margin: 15px 0 5px;
+  font-size: 16px;
+}
+
+.upload-zone p {
+  margin: 0;
+  font-size: 11px;
+  color: #9ba3af;
+}
+
+.choose-btn {
+  margin-top: 16px;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 9px;
+  background: #b51226;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.choose-btn:hover {
+  background: #991023;
+}
+
+.upload-zone > small {
+  margin-top: 14px;
+  color: #a3aab5;
+  font-size: 10px;
+}
+
+.selected-file {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #e9ecf1;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-.entity-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #f8f9fa;
+.selected-icon {
+  width: 42px;
+  height: 44px;
+  display: grid;
+  place-items: center;
   border-radius: 9px;
-  padding: 11px;
-  font-size: 13px;
+  background: #fff0f2;
+  color: #b51226;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.entity-dot {
-  width: 8px;
-  height: 8px;
-  background: #b76b43;
+.selected-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.selected-info strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.selected-info span {
+  font-size: 10px;
+  color: #9aa3af;
+}
+
+.remove-file {
+  border: none;
+  background: #fff0f2;
+  color: #b51226;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 20px;
+}
+
+.analysis-options {
+  margin-top: 23px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.analysis-option {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid #e9ebf0;
+  border-radius: 12px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.analysis-option:hover {
+  border-color: #edb6bf;
+}
+
+.analysis-option.selected {
+  border-color: #d84c60;
+  background: #fff7f8;
+}
+
+.analysis-option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.option-symbol {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: #fff0f2;
+  color: #b51226;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.option-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.option-text strong {
+  font-size: 12px;
+}
+
+.option-text small {
+  font-size: 10px;
+  color: #98a1ae;
+}
+
+.radio-circle {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d4d8e0;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.classification {
+.selected .radio-circle {
+  border: 5px solid #b51226;
+}
+
+.analyze-button {
+  width: 100%;
+  margin-top: 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 25px;
-  flex-wrap: wrap;
-}
-
-.field-label {
-  display: block;
-  color: #84909a;
+  justify-content: center;
+  gap: 11px;
+  padding: 14px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #d51b35, #a50d22);
+  color: white;
   font-size: 12px;
-  margin-bottom: 10px;
+  font-weight: 800;
 }
 
-.category-badge {
-  display: inline-block;
-  background: #e9f3ee;
-  color: #34815a;
-  padding: 9px 15px;
-  border-radius: 9px;
-  font-size: 13px;
+.analyze-button:hover:not(:disabled) {
+  transform: translateY(-2px);
 }
 
-.confidence {
-  flex: 1;
-  max-width: 400px;
-  min-width: 180px;
+.analyze-button:disabled {
+  background: #e5c6cc;
+  cursor: not-allowed;
 }
 
-.empty-state {
+.analysis-disclaimer {
   text-align: center;
-  padding: 50px 20px;
-  background: white;
-  border: 1px dashed #dce2e7;
-  border-radius: 15px;
+  color: #a2a9b4;
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 12px 0 0;
 }
 
-.empty-icon {
-  width: 65px;
-  height: 65px;
-  background: #f8eadf;
-  color: #b76b43;
-  border-radius: 17px;
+.results-section {
+  background: white;
+  border: 1px solid #eaecf1;
+  border-radius: 19px;
+  padding: 27px;
+}
+
+.results-heading h2 {
+  font-size: 21px;
+  margin: 8px 0 0;
+}
+
+.demo-badge {
+  color: #ad741d;
+  background: #fff4e5;
+  padding: 9px 12px;
+  border-radius: 30px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.results-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.result-card {
+  border: 1px solid #eaecf1;
+  border-radius: 14px;
+  padding: 21px;
+}
+
+.result-icon {
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  font-size: 32px;
-  margin: 0 auto 18px;
+  border-radius: 12px;
+  font-size: 23px;
 }
 
-.empty-state h3 {
-  font-size: 17px;
-  font-weight: 700;
+.result-icon.red { background: #fff0f2; color: #b51226; }
+.result-icon.blue { background: #eaf2ff; color: #477ed0; }
+.result-icon.green { background: #eaf8f0; color: #219668; }
+
+.result-card h3 {
+  margin: 17px 0 9px;
+  font-size: 14px;
 }
 
-.empty-state p {
-  color: #87939e;
-  font-size: 13px;
-  margin: 10px auto 0;
-  max-width: 400px;
-  line-height: 1.7;
+.result-card p {
+  color: #919aa8;
+  font-size: 11px;
+  line-height: 1.8;
 }
 
-.demo-note {
-  color: #9aa4ad;
+.result-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.result-placeholder span {
+  height: 8px;
+  border-radius: 10px;
+  background: #f0f1f4;
+}
+
+.result-placeholder span:nth-child(2) { width: 85%; }
+.result-placeholder span:nth-child(3) { width: 60%; }
+
+.result-link {
+  display: inline-block;
+  color: #b51226;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 12px;
+}
+
+.results-notice {
+  margin-top: 18px;
+  padding: 15px;
+  background: #fff9ef;
+  border: 1px solid #f7e7c9;
+  border-radius: 11px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  color: #a87727;
+}
+
+.results-notice > span {
+  font-size: 18px;
+}
+
+.results-notice p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.features-section {
+  padding: 8px 0;
+}
+
+.features-heading {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.features-heading h2 {
+  font-size: 23px;
+  margin: 10px 0;
+}
+
+.features-heading p {
   font-size: 12px;
+  color: #939baa;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.feature {
+  background: white;
+  border: 1px solid #eaecf1;
+  border-radius: 15px;
+  padding: 21px;
+}
+
+.feature-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: #fff0f2;
+  color: #b51226;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  margin-bottom: 17px;
+}
+
+.feature strong {
+  font-size: 12px;
+}
+
+.feature p {
+  color: #929baa;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.page-footer {
+  color: #a1a8b3;
+  font-size: 10px;
   text-align: center;
 }
 
-@media (max-width: 700px) {
-  .stats-grid,
+@media (max-width: 1100px) {
+  .hero-art {
+    opacity: .4;
+    right: -25px;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 850px) {
+  .workspace-grid,
   .results-grid {
     grid-template-columns: 1fr;
   }
 
-  .selection-area {
-    flex-direction: column;
+  .hero-art {
+    display: none;
   }
 
-  .document-select {
-    min-width: 0;
-    width: 100%;
+  .step-line {
+    width: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .analysis-hero {
+    padding: 28px 23px;
+  }
+
+  .steps {
+    justify-content: space-between;
+    gap: 7px;
+    padding: 14px;
+  }
+
+  .step {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .step-line {
+    display: none;
+  }
+
+  .step small {
+    display: none;
+  }
+
+  .panel,
+  .results-section {
+    padding: 19px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

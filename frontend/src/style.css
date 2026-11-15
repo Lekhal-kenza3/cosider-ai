@@ -1,5 +1,217 @@
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-ink-50 text-ink-900 font-sans antialiased; }
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #202634;
+  background: #f7f8fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+
+  --cosider-red: #b51226;
+  --cosider-red-dark: #8f0d1d;
+  --cosider-red-light: #fff0f2;
+  --cosider-text: #202634;
+  --cosider-muted: #778092;
+  --cosider-border: #e9eaf0;
+  --cosider-background: #f7f8fb;
+  --cosider-white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 95% 0%, #ffe7eb 0, transparent 30%),
+    linear-gradient(145deg, #ffffff, #f7f8fb 45%, #f3f4f8);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Manrope', sans-serif;
+  letter-spacing: -0.035em;
+}
+
+::selection {
+  background: #f7b7c0;
+  color: #79101c;
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d7d9e1;
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b51226;
+}
+
+/* Cartes professionnelles */
+
+.cosider-card {
+  background: #ffffff;
+  border: 1px solid var(--cosider-border);
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(24, 30, 45, 0.035);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cosider-card:hover {
+  box-shadow: 0 16px 42px rgba(24, 30, 45, 0.07);
+}
+
+/* Bouton principal */
+
+.cosider-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #cf1830, #a40f22);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 7px 18px rgba(181, 18, 38, 0.18);
+}
+
+.cosider-btn-primary:hover {
+  background: linear-gradient(135deg, #e1243c, #b51226);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(181, 18, 38, 0.24);
+}
+
+/* Bouton secondaire */
+
+.cosider-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 1px solid #e4e6ed;
+  border-radius: 12px;
+  background: white;
+  color: #343b4a;
+  font-weight: 700;
+}
+
+.cosider-btn-secondary:hover {
+  border-color: #efb7bf;
+  color: var(--cosider-red);
+  background: #fff8f9;
+}
+
+/* Champs de formulaire */
+
+.cosider-input {
+  width: 100%;
+  padding: 13px 16px;
+  background: #ffffff;
+  border: 1px solid #e4e6ed;
+  border-radius: 12px;
+  outline: none;
+  color: #202634;
+  transition: all 0.2s ease;
+}
+
+.cosider-input:focus {
+  border-color: #c71931;
+  box-shadow: 0 0 0 4px rgba(181, 18, 38, 0.08);
+}
+
+/* Étiquettes */
+
+.cosider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cosider-badge-success {
+  background: #e9f8f0;
+  color: #168452;
+}
+
+.cosider-badge-warning {
+  background: #fff5e5;
+  color: #b87919;
+}
+
+.cosider-badge-red {
+  background: #fff0f2;
+  color: #b51226;
+}
+
+/* Animation */
+
+@keyframes cosiderFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cosider-fade-in {
+  animation: cosiderFadeIn 0.45s ease both;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .cosider-card {
+    border-radius: 16px;
+  }
+
+  .cosider-btn-primary,
+  .cosider-btn-secondary {
+    padding: 11px 15px;
+  }
+}

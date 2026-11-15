@@ -1,144 +1,49 @@
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, nextTick } from 'vue'
 
-// 1. Messages de bienvenue
-const messageBienvenue = {
-  id: 1,
-  role: 'assistant',
-  contenu: 'Bonjour ! 👋 Je suis COSIDER AI, votre assistant documentaire. Je peux vous aider à comprendre les rapports, les procédures de sécurité et les documents techniques. Comment puis-je vous aider ?',
-  heure: ''
-}
-
-// 2. Charger les messages sauvegardés
-function chargerMessages() {
-  try {
-    const sauvegarde = JSON.parse(localStorage.getItem('cosider-chat'))
-    return Array.isArray(sauvegarde) && sauvegarde.length
-      ? sauvegarde
-      : [{ ...messageBienvenue }]
-  } catch {
-    return [{ ...messageBienvenue }]
-  }
-}
-
-const messages = ref(chargerMessages())
-const nouveauMessage = ref('')
-const chargement = ref(false)
+const messages = ref([])
+const saisie = ref('')
 const zoneMessages = ref(null)
+const conversationCommencee = ref(false)
 
-// 3. Questions suggérées
 const suggestions = [
-  'Quelles sont les règles de sécurité sur un chantier ?',
-  'Comment organiser un rapport technique ?',
-  'Quels sont les équipements de protection individuelle ?',
-  'Comment préparer une réunion de chantier ?'
+  {
+    icone: '▤',
+    titre: 'Résumer un document',
+    description: 'Obtenir les informations essentielles',
+    question: 'Peux-tu résumer les points importants de ce document ?'
+  },
+  {
+    icone: '✦',
+    titre: 'Analyser un rapport',
+    description: 'Explorer les données et conclusions',
+    question: 'Quels sont les principaux résultats de ce rapport ?'
+  },
+  {
+    icone: '◈',
+    titre: 'Rechercher une information',
+    description: 'Poser une question sur un fichier',
+    question: 'Quelles informations importantes contient ce fichier ?'
+  },
+  {
+    icone: '✓',
+    titre: 'Vérifier une procédure',
+    description: 'Examiner les étapes d’un processus',
+    question: 'Quelles sont les étapes principales de cette procédure ?'
+  }
 ]
 
-// 4. Nombre de messages envoyés
-const nombreQuestions = computed(() =>
-  messages.value.filter(m => m.role === 'user').length
-)
-
-// 5. Sauvegarder automatiquement la conversation
-watch(messages, (valeur) => {
-  try {
-    localStorage.setItem('cosider-chat', JSON.stringify(valeur))
-  } catch (erreur) {
-    console.error('Sauvegarde impossible :', erreur)
-  }
-}, { deep: true })
-
-// 6. Afficher le dernier message
-async function defilerVersBas() {
-  await nextTick()
-  if (zoneMessages.value) {
-    zoneMessages.value.scrollTop = zoneMessages.value.scrollHeight
-  }
+function utiliserSuggestion(question) {
+  saisie.value = question
 }
 
-// 7. Réponses de démonstration
-function genererReponse(question) {
-  const texte = question.toLowerCase()
-
-  if (texte.includes('sécurité') || texte.includes('chantier')) {
-    return `La sécurité sur un chantier repose sur plusieurs principes :
-
-• Porter les équipements de protection individuelle (EPI).
-• Respecter les consignes et les zones de circulation.
-• Vérifier les équipements avant leur utilisation.
-• Signaler immédiatement les situations dangereuses.
-• Participer aux formations de prévention.
-
-Cette réponse est une démonstration générale, et non une analyse des documents COSIDER.`
-  }
-
-  if (texte.includes('rapport')) {
-    return `Un rapport technique peut contenir :
-
-1. Une page de garde.
-2. Une introduction présentant le contexte.
-3. Les objectifs du projet.
-4. La méthodologie utilisée.
-5. Les résultats obtenus.
-6. Une conclusion et des recommandations.
-
-Vous pourrez prochainement importer un rapport et demander son résumé automatique.`
-  }
-
-  if (texte.includes('équipement') || texte.includes('protection')) {
-    return `Les équipements de protection individuelle courants comprennent :
-
-• Le casque de sécurité.
-• Les chaussures de sécurité.
-• Les gants adaptés aux travaux.
-• Les lunettes de protection.
-• Le gilet haute visibilité.
-• Les protections auditives lorsque nécessaire.
-
-Le choix exact des EPI dépend des risques identifiés pour chaque activité.`
-  }
-
-  if (texte.includes('réunion')) {
-    return `Pour préparer une réunion de chantier :
-
-1. Définir l'ordre du jour.
-2. Vérifier l'avancement des travaux.
-3. Identifier les difficultés rencontrées.
-4. Préparer les documents nécessaires.
-5. Définir les décisions et les responsables.
-6. Rédiger un compte rendu après la réunion.`
-  }
-
-  if (texte.includes('bonjour') || texte.includes('salut')) {
-    return 'Bonjour ! 😊 Bienvenue sur COSIDER AI. Vous pouvez me poser une question sur les documents, la sécurité ou les rapports techniques.'
-  }
-
-  return `Votre question : "${question}"
-
-Je suis actuellement en mode démonstration.
-
-Je peux afficher des réponses prédéfinies concernant :
-• La sécurité sur les chantiers.
-• Les rapports techniques.
-• Les équipements de protection.
-• Les réunions de chantier.
-
-La connexion à une véritable intelligence artificielle sera ajoutée dans une prochaine étape.`
-}
-
-// 8. Envoyer un message
-function envoyerMessage(texteSuggestion = null) {
-  if (chargement.value) return
-
-  const texte = typeof texteSuggestion === 'string'
-    ? texteSuggestion.trim()
-    : nouveauMessage.value.trim()
-
+async function envoyerMessage() {
+  const texte = saisie.value.trim()
   if (!texte) return
 
   messages.value.push({
-    id: Date.now() + Math.random(),
+    id: Date.now(),
     role: 'user',
     contenu: texte,
     heure: new Date().toLocaleTimeString('fr-FR', {
@@ -147,162 +52,190 @@ function envoyerMessage(texteSuggestion = null) {
     })
   })
 
-  nouveauMessage.value = ''
-  chargement.value = true
-  defilerVersBas()
+  conversationCommencee.value = true
+  saisie.value = ''
 
-  // Simuler un délai de réponse
-  setTimeout(() => {
-    messages.value.push({
-      id: Date.now() + Math.random(),
-      role: 'assistant',
-      contenu: genererReponse(texte),
-      heure: new Date().toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    })
-
-    chargement.value = false
-    defilerVersBas()
-  }, 700)
+  await nextTick()
+  defilerEnBas()
 }
 
-// 9. Nouvelle conversation
+function defilerEnBas() {
+  if (zoneMessages.value) {
+    zoneMessages.value.scrollTop = zoneMessages.value.scrollHeight
+  }
+}
+
 function nouvelleConversation() {
-  if (chargement.value) return
-
-  if (confirm('Effacer la conversation actuelle ?')) {
-    messages.value = [{ ...messageBienvenue }]
-    nouveauMessage.value = ''
-  }
-}
-
-// 10. Envoyer avec la touche Entrée
-function gererClavier(event) {
-  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-    event.preventDefault()
-    envoyerMessage()
-  }
+  messages.value = []
+  saisie.value = ''
+  conversationCommencee.value = false
 }
 </script>
 
 <template>
-  <div class="chat-page">
+  <div class="chat-page cosider-fade-in">
 
     <!-- EN-TÊTE -->
-    <div class="chat-header">
-      <div class="assistant-info">
-        <div class="assistant-avatar">✦</div>
-
-        <div>
-          <h2>Assistant COSIDER AI</h2>
-          <p>
-            <span class="status-dot"></span>
-            Mode démonstration
-          </p>
-        </div>
+    <div class="page-heading">
+      <div>
+        <span class="eyebrow">COSIDER AI · ASSISTANT INTELLIGENT</span>
+        <h1>Assistant <span>documentaire.</span></h1>
+        <p>
+          Un espace de conversation conçu pour interagir
+          avec vos documents et explorer leurs informations.
+        </p>
       </div>
 
       <button class="new-chat-btn" @click="nouvelleConversation">
-        + Nouvelle conversation
+        <span>＋</span>
+        Nouvelle conversation
       </button>
     </div>
 
-    <!-- ZONE PRINCIPALE -->
+    <!-- ESPACE DE CONVERSATION -->
     <div class="chat-container">
 
-      <!-- INFORMATIONS -->
-      <div class="chat-toolbar">
-        <span>💬 Conversation documentaire</span>
-        <span>{{ nombreQuestions }} question(s)</span>
+      <!-- BARRE SUPÉRIEURE -->
+      <div class="chat-topbar">
+        <div class="assistant-identity">
+          <div class="assistant-avatar">✦</div>
+
+          <div>
+            <strong>COSIDER AI Assistant</strong>
+            <span>Interface de conversation</span>
+          </div>
+        </div>
+
+        <div class="model-badge">
+          <span class="model-dot"></span>
+          Mode démonstration
+        </div>
       </div>
 
       <!-- MESSAGES -->
-      <div ref="zoneMessages" class="messages-area">
+      <div ref="zoneMessages" class="chat-messages">
 
-        <div
-          v-for="message in messages"
-          :key="message.id"
-          class="message-row"
-          :class="message.role"
-        >
-          <div class="message-avatar">
-            {{ message.role === 'assistant' ? '✦' : 'U' }}
+        <!-- ÉCRAN D'ACCUEIL -->
+        <div v-if="!conversationCommencee" class="welcome-screen">
+          <div class="welcome-symbol">
+            <div class="symbol-inner">✦</div>
           </div>
 
-          <div class="message-content">
-            <span class="message-author">
-              {{ message.role === 'assistant' ? 'COSIDER AI' : 'Vous' }}
-            </span>
-
-            <div class="message-bubble">
-              {{ message.contenu }}
-            </div>
-
-            <small v-if="message.heure">{{ message.heure }}</small>
+          <div class="welcome-label">
+            VOTRE ESPACE D'INTELLIGENCE DOCUMENTAIRE
           </div>
-        </div>
 
-        <!-- INDICATEUR DE CHARGEMENT -->
-        <div v-if="chargement" class="message-row assistant">
-          <div class="message-avatar">✦</div>
-          <div class="message-content">
-            <span class="message-author">COSIDER AI</span>
-            <div class="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </div>
+          <h2>
+            Bonjour, comment puis-je<br />
+            <span>vous accompagner ?</span>
+          </h2>
 
-        <!-- QUESTIONS SUGGÉRÉES -->
-        <div v-if="nombreQuestions === 0" class="suggestions">
-          <h3>Questions suggérées</h3>
+          <p>
+            Préparez vos questions et découvrez les possibilités
+            de votre futur assistant documentaire COSIDER AI.
+          </p>
 
           <div class="suggestions-grid">
             <button
               v-for="suggestion in suggestions"
-              :key="suggestion"
-              @click="envoyerMessage(suggestion)"
+              :key="suggestion.titre"
+              class="suggestion-card"
+              @click="utiliserSuggestion(suggestion.question)"
             >
-              <span>✦</span>
-              {{ suggestion }}
+              <span class="suggestion-icon">{{ suggestion.icone }}</span>
+
+              <strong>{{ suggestion.titre }}</strong>
+              <small>{{ suggestion.description }}</small>
+
+              <span class="suggestion-arrow">↗</span>
             </button>
+          </div>
+        </div>
+
+        <!-- CONVERSATION -->
+        <div v-else class="conversation">
+          <div class="conversation-date">Conversation actuelle</div>
+
+          <div
+            v-for="message in messages"
+            :key="message.id"
+            class="message-row user-row"
+          >
+            <div class="message-avatar user-avatar">U</div>
+
+            <div class="message-content">
+              <div class="message-header">
+                <strong>Vous</strong>
+                <span>{{ message.heure }}</span>
+              </div>
+
+              <div class="message-bubble">
+                {{ message.contenu }}
+              </div>
+            </div>
+          </div>
+
+          <div class="demo-notice">
+            <div class="demo-notice-icon">✦</div>
+            <div>
+              <strong>Assistant IA en préparation</strong>
+              <p>
+                Vos messages s'affichent correctement.
+                Les réponses automatiques seront disponibles
+                lorsque nous connecterons le backend IA.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- SAISIE DU MESSAGE -->
-      <div class="input-section">
-        <div class="input-wrapper">
+      <!-- SAISIE -->
+      <div class="composer-area">
+        <div class="composer">
           <textarea
-            v-model="nouveauMessage"
-            placeholder="Posez votre question à COSIDER AI..."
+            v-model="saisie"
+            placeholder="Posez votre question sur vos documents..."
             rows="2"
-            :disabled="chargement"
-            @keydown="gererClavier"
+            @keydown.enter.exact.prevent="envoyerMessage"
           ></textarea>
 
-          <button
-            class="send-btn"
-            :disabled="!nouveauMessage.trim() || chargement"
-            @click="envoyerMessage()"
-          >
-            ➤
-          </button>
+          <div class="composer-bottom">
+            <div class="composer-tools">
+              <span class="composer-hint">
+                ✦ Espace de travail intelligent
+              </span>
+            </div>
+
+            <button
+              class="send-button"
+              :disabled="!saisie.trim()"
+              aria-label="Envoyer le message"
+              @click="envoyerMessage"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="m5 12 14-7-4 14-3-6-7-1Z"/>
+                <path d="m12 13 7-8"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <p class="input-note">
-          Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne
-        </p>
-        <p class="demo-warning">
-          Réponses simulées : aucun document n'est encore consulté par l'IA.
-        </p>
+        <div class="composer-footer">
+          <span>
+            COSIDER AI · Intelligence documentaire
+          </span>
+          <span>
+            Interface de démonstration — aucune réponse IA générée
+          </span>
+        </div>
       </div>
-
     </div>
+
   </div>
 </template>
 
@@ -310,323 +243,498 @@ function gererClavier(event) {
 .chat-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  height: calc(100vh - 145px);
-  min-height: 540px;
-  color: #263441;
+  gap: 24px;
+  min-height: calc(100vh - 160px);
+  color: #202634;
 }
 
-.chat-header {
+.page-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
-.assistant-info {
-  display: flex;
-  align-items: center;
-  gap: 13px;
+.eyebrow {
+  color: #b51226;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
 }
 
-.assistant-avatar {
-  width: 46px;
-  height: 46px;
-  background: linear-gradient(135deg, #b76b43, #dfaa84);
-  color: white;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  font-size: 25px;
+.page-heading h1 {
+  font-size: clamp(27px, 3vw, 36px);
+  margin: 10px 0;
+  font-weight: 800;
 }
 
-.assistant-info h2 {
-  font-size: 21px;
-  font-weight: 700;
+.page-heading h1 span {
+  color: #b51226;
 }
 
-.assistant-info p {
+.page-heading p {
+  color: #9099a7;
   font-size: 12px;
-  color: #7b8993;
-  margin-top: 4px;
-}
-
-.status-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: #4bae7c;
-  border-radius: 50%;
-  margin-right: 5px;
+  line-height: 1.8;
+  margin: 0;
 }
 
 .new-chat-btn {
-  border: 1px solid #e2e5e8;
-  background: white;
-  padding: 10px 15px;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #b51226;
+  color: white;
+  border: none;
+  border-radius: 11px;
+  padding: 13px 17px;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 7px 18px rgba(181,18,38,.15);
 }
 
 .new-chat-btn:hover {
-  background: #f8f2ed;
+  background: #981023;
+  transform: translateY(-2px);
+}
+
+.new-chat-btn span {
+  font-size: 19px;
+  font-weight: 400;
 }
 
 .chat-container {
   background: white;
-  border: 1px solid #e7e9ec;
-  border-radius: 16px;
+  border: 1px solid #eaecf1;
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(30,35,50,.035);
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  min-height: 660px;
+  height: calc(100vh - 250px);
+  max-height: 1000px;
   overflow: hidden;
 }
 
-.chat-toolbar {
-  padding: 16px 22px;
-  border-bottom: 1px solid #eef0f2;
+.chat-topbar {
+  min-height: 77px;
+  border-bottom: 1px solid #eef0f3;
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  font-size: 12px;
-  color: #7c8993;
+  align-items: center;
+  padding: 0 25px;
+  gap: 15px;
 }
 
-.messages-area {
+.assistant-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.assistant-avatar {
+  width: 43px;
+  height: 43px;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #d61b34, #9d0d21);
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 23px;
+  box-shadow: 0 6px 15px rgba(181,18,38,.14);
+}
+
+.assistant-identity > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.assistant-identity strong {
+  font-size: 13px;
+}
+
+.assistant-identity span {
+  color: #929baa;
+  font-size: 10px;
+}
+
+.model-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff5e9;
+  color: #ad741d;
+  border: 1px solid #f8e7cc;
+  border-radius: 30px;
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.model-dot {
+  width: 7px;
+  height: 7px;
+  background: #dfa337;
+  border-radius: 50%;
+}
+
+.chat-messages {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 25px;
+  background:
+    radial-gradient(circle at 50% 10%, #fff7f8 0, transparent 50%),
+    #ffffff;
+}
+
+.welcome-screen {
+  max-width: 750px;
+  margin: 0 auto;
+  padding: 36px 10px 20px;
   display: flex;
   flex-direction: column;
-  gap: 23px;
+  align-items: center;
+  text-align: center;
 }
 
-.message-row {
-  display: flex;
-  gap: 12px;
-  max-width: 85%;
-}
-
-.message-row.user {
-  align-self: flex-end;
-  flex-direction: row-reverse;
-}
-
-.message-avatar {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 10px;
-  background: #f5e8df;
-  color: #b76b43;
+.welcome-symbol {
+  width: 93px;
+  height: 93px;
+  border-radius: 27px;
+  background: #fff0f2;
   display: grid;
   place-items: center;
-  font-weight: 700;
+  margin-bottom: 25px;
+  border: 1px solid #f8d8de;
+  box-shadow: 0 0 0 13px rgba(255,240,242,.5);
 }
 
-.user .message-avatar {
-  background: #e6edf5;
-  color: #4d7197;
-}
-
-.message-content {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.user .message-content {
-  align-items: flex-end;
-}
-
-.message-author {
-  font-size: 12px;
-  font-weight: 700;
-  color: #5d6973;
-}
-
-.message-bubble {
-  background: #f6f7f9;
-  border: 1px solid #eef0f2;
-  padding: 13px 17px;
-  border-radius: 4px 15px 15px 15px;
-  font-size: 14px;
-  line-height: 1.7;
-  white-space: pre-line;
-  overflow-wrap: anywhere;
-}
-
-.user .message-bubble {
-  background: #b76b43;
+.symbol-inner {
+  width: 62px;
+  height: 62px;
+  border-radius: 19px;
+  background: linear-gradient(145deg, #d71d37, #a20d21);
   color: white;
-  border-color: #b76b43;
-  border-radius: 15px 4px 15px 15px;
+  display: grid;
+  place-items: center;
+  font-size: 34px;
 }
 
-.message-content small {
-  color: #a1aab2;
+.welcome-label {
+  color: #b51226;
   font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  margin-bottom: 13px;
 }
 
-.suggestions {
-  margin-top: 15px;
-  padding-top: 15px;
+.welcome-screen h2 {
+  font-size: clamp(25px, 3vw, 35px);
+  line-height: 1.35;
+  margin: 0;
+  font-weight: 800;
 }
 
-.suggestions h3 {
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 15px;
+.welcome-screen h2 span {
+  color: #b51226;
+}
+
+.welcome-screen > p {
+  max-width: 460px;
+  color: #929baa;
+  font-size: 12px;
+  line-height: 1.9;
+  margin: 15px 0 29px;
 }
 
 .suggestions-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  width: 100%;
+}
+
+.suggestion-card {
+  position: relative;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid #eceef2;
+  border-radius: 14px;
+  background: white;
+  transition: all .2s;
+}
+
+.suggestion-card:hover {
+  border-color: #edb5bf;
+  background: #fffafb;
+  transform: translateY(-2px);
+  box-shadow: 0 9px 24px rgba(181,18,38,.06);
+}
+
+.suggestion-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fff0f2;
+  color: #b51226;
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  margin-bottom: 4px;
+}
+
+.suggestion-card strong {
+  font-size: 12px;
+  color: #2b3442;
+}
+
+.suggestion-card small {
+  font-size: 10px;
+  color: #9ba3af;
+}
+
+.suggestion-arrow {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  color: #c7cbd3;
+  font-size: 17px;
+}
+
+.suggestion-card:hover .suggestion-arrow {
+  color: #b51226;
+}
+
+.conversation {
+  max-width: 850px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.conversation-date {
+  text-align: center;
+  color: #a3aab5;
+  font-size: 10px;
+  margin: 12px 0;
+}
+
+.message-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.user-row {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 35px;
+  height: 35px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.user-avatar {
+  background: #fff0f2;
+  color: #b51226;
+}
+
+.message-content {
+  max-width: 75%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.message-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.message-header strong {
+  font-size: 11px;
+}
+
+.message-header span {
+  font-size: 10px;
+  color: #a0a7b2;
+}
+
+.message-bubble {
+  background: #b51226;
+  color: white;
+  border-radius: 15px 4px 15px 15px;
+  padding: 13px 17px;
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.demo-notice {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid #f1e0e3;
+  border-radius: 13px;
+  background: #fff9fa;
+}
+
+.demo-notice-icon {
+  width: 37px;
+  height: 37px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #fff0f2;
+  color: #b51226;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+
+.demo-notice strong {
+  font-size: 12px;
+}
+
+.demo-notice p {
+  color: #8992a0;
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 7px 0 0;
+}
+
+.composer-area {
+  border-top: 1px solid #eef0f3;
+  padding: 19px 25px 15px;
+  background: white;
+}
+
+.composer {
+  max-width: 850px;
+  margin: 0 auto;
+  border: 1px solid #e5e8ee;
+  border-radius: 15px;
+  padding: 14px 16px 12px;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.composer:focus-within {
+  border-color: #d65c6e;
+  box-shadow: 0 0 0 4px rgba(181,18,38,.05);
+}
+
+.composer textarea {
+  width: 100%;
+  min-height: 53px;
+  max-height: 150px;
+  resize: vertical;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  color: #283140;
+  line-height: 1.7;
+  background: transparent;
+}
+
+.composer textarea::placeholder {
+  color: #a1a9b5;
+}
+
+.composer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.suggestions-grid button {
-  border: 1px solid #e9e2dc;
-  background: #fdfaf8;
-  padding: 15px;
+.composer-hint {
+  color: #a2a9b5;
+  font-size: 10px;
+}
+
+.send-button {
+  width: 38px;
+  height: 38px;
+  border: none;
   border-radius: 11px;
-  text-align: left;
-  font-size: 13px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.suggestions-grid button span {
-  color: #b76b43;
-  margin-right: 7px;
-}
-
-.suggestions-grid button:hover {
-  border-color: #b76b43;
-  background: #f9eee6;
-}
-
-.input-section {
-  border-top: 1px solid #edf0f2;
-  padding: 16px 22px;
-}
-
-.input-wrapper {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  border: 1px solid #dce2e7;
-  border-radius: 13px;
-  padding: 9px;
-}
-
-.input-wrapper:focus-within {
-  border-color: #b76b43;
-}
-
-textarea {
-  width: 100%;
-  border: none;
-  outline: none;
-  resize: none;
-  padding: 8px;
-  font-size: 14px;
-  background: transparent;
-  min-height: 55px;
-}
-
-.send-btn {
-  background: #b76b43;
+  background: #b51226;
   color: white;
-  border: none;
-  border-radius: 9px;
-  width: 43px;
-  height: 43px;
-  flex-shrink: 0;
-  font-size: 19px;
-  cursor: pointer;
+  display: grid;
+  place-items: center;
 }
 
-.send-btn:hover {
-  background: #975331;
+.send-button:hover:not(:disabled) {
+  background: #961023;
+  transform: translateY(-2px);
 }
 
-.send-btn:disabled {
-  opacity: 0.45;
+.send-button:disabled {
+  background: #e5c8cd;
   cursor: not-allowed;
 }
 
-.input-note,
-.demo-warning {
-  text-align: center;
-  font-size: 11px;
-  margin-top: 9px;
-  color: #9aa5ae;
+.send-button svg {
+  width: 18px;
+  height: 18px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.demo-warning {
-  color: #b76b43;
-}
-
-.typing-indicator {
+.composer-footer {
+  max-width: 850px;
+  margin: 12px auto 0;
   display: flex;
-  gap: 5px;
-  padding: 16px;
-  background: #f6f7f9;
-  border-radius: 12px;
+  justify-content: space-between;
+  gap: 12px;
+  color: #a4abb6;
+  font-size: 10px;
 }
 
-.typing-indicator span {
-  width: 7px;
-  height: 7px;
-  background: #b76b43;
-  border-radius: 50%;
-  animation: pulse 1s infinite alternate;
-}
-
-.typing-indicator span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing-indicator span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes pulse {
-  from { opacity: 0.25; transform: translateY(0); }
-  to { opacity: 1; transform: translateY(-4px); }
-}
-
-@media (max-width: 650px) {
-  .chat-page {
-    height: calc(100dvh - 115px);
-    min-height: 430px;
+@media (max-width: 768px) {
+  .chat-container {
+    height: calc(100vh - 230px);
+    min-height: 550px;
   }
 
-  .chat-header {
-    align-items: flex-start;
-  }
-
-  .messages-area {
-    padding: 15px;
-  }
-
-  .message-row {
-    max-width: 96%;
+  .chat-topbar,
+  .chat-messages,
+  .composer-area {
+    padding-left: 15px;
+    padding-right: 15px;
   }
 
   .suggestions-grid {
     grid-template-columns: 1fr;
   }
 
-  .input-section {
-    padding: 12px;
+  .welcome-screen {
+    padding-top: 20px;
+  }
+
+  .model-badge,
+  .composer-footer span:last-child {
+    display: none;
+  }
+
+  .message-content {
+    max-width: 85%;
   }
 }
 </style>
